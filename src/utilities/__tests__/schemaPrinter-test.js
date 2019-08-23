@@ -644,6 +644,14 @@ describe('Type System Printer', () => {
         if: Boolean!
       ) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 
+      """
+      Directs the executor to defer this fragment when the \`if\` argument is true or undefined.
+      """
+      directive @defer(
+        """Defer fragment when true or undefined."""
+        if: Boolean
+      ) on FRAGMENT_SPREAD | INLINE_FRAGMENT
+
       """Marks an element of a GraphQL schema as no longer supported."""
       directive @deprecated(
         """
@@ -969,6 +977,17 @@ describe('Type System Printer', () => {
         isDeprecated: Boolean!
         deprecationReason: String
       }
+      # Directs the executor to defer this fragment when the \`if\` argument is true or undefined.
+      directive @defer(
+        # Defer fragment when true or undefined.
+        if: Boolean
+      ) on FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+      # Marks an element of a GraphQL schema as no longer supported.
+      directive @deprecated(
+        # Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted using the Markdown syntax, as specified by [CommonMark](https://commonmark.org/).
+        reason: String = "No longer supported"
+      ) on FIELD_DEFINITION | ENUM_VALUE
 
       # A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.
       #
