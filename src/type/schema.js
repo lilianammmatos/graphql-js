@@ -140,6 +140,8 @@ export class GraphQLSchema {
 
   // Used as a cache for validateSchema().
   __validationErrors: ?$ReadOnlyArray<GraphQLError>;
+  // Referenced by execute()
+  __experimentalDeferFragmentSpreads: boolean;
 
   constructor(config: $ReadOnly<GraphQLSchemaConfig>): void {
     // If this schema was built from a source known to be valid, then it may be
@@ -163,6 +165,8 @@ export class GraphQLSchema {
     this.astNode = config.astNode;
     this.extensionASTNodes = config.extensionASTNodes;
 
+    this.__experimentalDeferFragmentSpreads =
+      config.experimentalDeferFragmentSpreads || false;
     this._queryType = config.query;
     this._mutationType = config.mutation;
     this._subscriptionType = config.subscription;
@@ -371,6 +375,18 @@ export type GraphQLSchemaValidationOptions = {|
    * Default: false
    */
   assumeValid?: boolean,
+
+  /**
+   *
+   * EXPERIMENTAL:
+   *
+   * If enabled, processed fields from fragment spreads with @defer directive
+   * are not returned from the iniital query and the respective data is returned
+   * in patches after the initial result from the synchronous query.
+   *
+   * Default: false
+   */
+  experimentalDeferFragmentSpreads?: boolean,
 |};
 
 export type GraphQLSchemaConfig = {|
