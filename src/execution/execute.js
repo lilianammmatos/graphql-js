@@ -44,6 +44,7 @@ import type {
   GraphQLList,
 } from '../type/definition';
 import { assertValidSchema } from '../type/validate';
+import { Dispatcher, type ExecutionPatchResult } from '../type/dispatcher';
 import {
   SchemaMetaFieldDef,
   TypeMetaFieldDef,
@@ -52,6 +53,7 @@ import {
 import {
   GraphQLIncludeDirective,
   GraphQLSkipDirective,
+  GraphQLDeferDirective,
 } from '../type/directives';
 import {
   isObjectType,
@@ -106,6 +108,7 @@ export type ExecutionContext = {|
   fieldResolver: GraphQLFieldResolver<any, any>,
   typeResolver: GraphQLTypeResolver<any, any>,
   errors: Array<GraphQLError>,
+  dispatcher: Dispatcher,
 |};
 
 /**
@@ -119,6 +122,7 @@ export type ExecutionResult = {|
   errors?: $ReadOnlyArray<GraphQLError>,
   data?: ObjMap<mixed> | null,
   extensions?: ObjMap<mixed>,
+  patches?: AsyncIterable<ExecutionPatchResult>,
 |};
 
 export type FormattedExecutionResult = {|
@@ -137,6 +141,12 @@ export type ExecutionArgs = {|
   fieldResolver?: ?GraphQLFieldResolver<any, any>,
   typeResolver?: ?GraphQLTypeResolver<any, any>,
 |};
+
+export type FieldsAndPatches = {
+  fields: ObjMap<Array<FieldNode>>,
+  patches: Array<{| label: string, fields: ObjMap<Array<FieldNode>> |}>,
+  ...
+};
 
 /**
  * Implements the "Evaluating requests" section of the GraphQL specification.
@@ -262,9 +272,13 @@ function buildResponse(
   if (isPromise(data)) {
     return data.then((resolved) => buildResponse(exeContext, resolved));
   }
-  return exeContext.errors.length === 0
-    ? { data }
-    : { errors: exeContext.errors, data };
+  const patches = exeContext.dispatcher.get();
+  const response =
+    exeContext.errors.length === 0
+      ? { data }
+      : { errors: exeContext.errors, data };
+
+  return patches ? { ...response, patches } : response;
 }
 
 /**
@@ -362,6 +376,8 @@ export function buildExecutionContext(
     variableValues: coercedVariableValues.coerced,
     fieldResolver: fieldResolver ?? defaultFieldResolver,
     typeResolver: typeResolver ?? defaultTypeResolver,
+    // TODO: Pass these properties in from buildExecution arugments
+    dispatcher: new Dispatcher(),
     errors: [],
   };
 }
@@ -375,11 +391,12 @@ function executeOperation(
   rootValue: mixed,
 ): PromiseOrValue<ObjMap<mixed> | null> {
   const type = getOperationRootType(exeContext.schema, operation);
-  const fields = collectFields(
+  const { fields, patches } = collectFields(
     exeContext,
     type,
     operation.selectionSet,
     Object.create(null),
+    [],
     Object.create(null),
   );
 
@@ -391,10 +408,36 @@ function executeOperation(
   //
   // Similar to completeValueCatchingError.
   try {
-    const result =
-      operation.operation === 'mutation'
-        ? executeFieldsSerially(exeContext, type, rootValue, path, fields)
-        : executeFields(exeContext, type, rootValue, path, fields);
+    let result;
+
+    if (operation.operation === 'mutation') {
+      result = executeFieldsSerially(exeContext, type, rootValue, path, fields);
+    } else {
+      result = executeFields(exeContext, type, rootValue, path, fields);
+
+      for (const patch of patches) {
+        const { label, fields: patchFields } = patch;
+        const errors = [];
+
+        exeContext.dispatcher.add(
+          label,
+          // TODO: `path` is initially "undefined", which essentialy means "root",
+          // investigate if "undefined" is a valid path value.
+          path,
+          () =>
+            executeFields(
+              exeContext,
+              type,
+              rootValue,
+              path,
+              patchFields,
+              errors,
+            ),
+          errors,
+        );
+      }
+    }
+
     if (isPromise(result)) {
       return result.then(undefined, (error) => {
         exeContext.errors.push(error);
@@ -457,6 +500,7 @@ function executeFields(
   sourceValue: mixed,
   path: Path | void,
   fields: ObjMap<Array<FieldNode>>,
+  errors?: Array<GraphQLError>,
 ): PromiseOrValue<ObjMap<mixed>> {
   const results = Object.create(null);
   let containsPromise = false;
@@ -470,6 +514,7 @@ function executeFields(
       sourceValue,
       fieldNodes,
       fieldPath,
+      errors,
     );
 
     if (result !== undefined) {
@@ -506,8 +551,9 @@ export function collectFields(
   runtimeType: GraphQLObjectType,
   selectionSet: SelectionSetNode,
   fields: ObjMap<Array<FieldNode>>,
+  patches: Array<{| label: string, fields: ObjMap<Array<FieldNode>> |}>,
   visitedFragmentNames: ObjMap<boolean>,
-): ObjMap<Array<FieldNode>> {
+): FieldsAndPatches {
   for (const selection of selectionSet.selections) {
     switch (selection.kind) {
       case Kind.FIELD: {
@@ -533,15 +579,26 @@ export function collectFields(
           runtimeType,
           selection.selectionSet,
           fields,
+          patches,
           visitedFragmentNames,
         );
         break;
       }
       case Kind.FRAGMENT_SPREAD: {
         const fragName = selection.name.value;
+
+        const patchLabel = exeContext.schema.__experimentalDeferFragmentSpreads
+          ? getDeferredNodeLabel(exeContext, selection)
+          : '';
+
+        if (!shouldIncludeNode(exeContext, selection)) {
+          continue;
+        }
         if (
-          visitedFragmentNames[fragName] ||
-          !shouldIncludeNode(exeContext, selection)
+          visitedFragmentNames[fragName] &&
+          // Cannot continue in this case because fields must be recollected for patch
+          // TODO: Is there an optimization we can make here?
+          !patchLabel
         ) {
           continue;
         }
@@ -553,18 +610,36 @@ export function collectFields(
         ) {
           continue;
         }
-        collectFields(
-          exeContext,
-          runtimeType,
-          fragment.selectionSet,
-          fields,
-          visitedFragmentNames,
-        );
+
+        if (patchLabel) {
+          const { fields: patchFields } = collectFields(
+            exeContext,
+            runtimeType,
+            fragment.selectionSet,
+            Object.create(null),
+            patches,
+            visitedFragmentNames,
+          );
+          patches.push({
+            label: patchLabel,
+            fields: patchFields,
+          });
+        } else {
+          collectFields(
+            exeContext,
+            runtimeType,
+            fragment.selectionSet,
+            fields,
+            patches,
+            visitedFragmentNames,
+          );
+        }
+
         break;
       }
     }
   }
-  return fields;
+  return { fields, patches };
 }
 
 /**
@@ -593,6 +668,27 @@ function shouldIncludeNode(
     return false;
   }
   return true;
+}
+
+/**
+ * Determines if a field should be deferred based on the @defer directive
+ * where @defer without an "if" condition defaults to true, and returns its unique label.
+ */
+function getDeferredNodeLabel(
+  exeContext: ExecutionContext,
+  node: FragmentSpreadNode | InlineFragmentNode,
+): string {
+  const defer = getDirectiveValues(
+    GraphQLDeferDirective,
+    node,
+    exeContext.variableValues,
+  );
+  if (!defer) {
+    return '';
+  }
+  return defer.if !== false && typeof defer.label === 'string'
+    ? defer.label
+    : '';
 }
 
 /**
@@ -636,6 +732,7 @@ function resolveField(
   source: mixed,
   fieldNodes: $ReadOnlyArray<FieldNode>,
   path: Path,
+  errors?: Array<GraphQLError>,
 ): PromiseOrValue<mixed> {
   const fieldNode = fieldNodes[0];
   const fieldName = fieldNode.name.value;
@@ -673,6 +770,7 @@ function resolveField(
     info,
     path,
     result,
+    errors,
   );
 }
 
@@ -756,12 +854,21 @@ function completeValueCatchingError(
   info: GraphQLResolveInfo,
   path: Path,
   result: mixed,
+  errors?: Array<GraphQLError>,
 ): PromiseOrValue<mixed> {
   try {
     let completed;
     if (isPromise(result)) {
       completed = result.then((resolved) =>
-        completeValue(exeContext, returnType, fieldNodes, info, path, resolved),
+        completeValue(
+          exeContext,
+          returnType,
+          fieldNodes,
+          info,
+          path,
+          resolved,
+          errors,
+        ),
       );
     } else {
       completed = completeValue(
@@ -771,6 +878,7 @@ function completeValueCatchingError(
         info,
         path,
         result,
+        errors,
       );
     }
 
@@ -778,16 +886,37 @@ function completeValueCatchingError(
       // Note: we don't rely on a `catch` method, but we do expect "thenable"
       // to take a second callback for the error case.
       return completed.then(undefined, (error) =>
-        handleFieldError(error, fieldNodes, path, returnType, exeContext),
+        handleFieldError(
+          error,
+          fieldNodes,
+          path,
+          returnType,
+          exeContext,
+          errors,
+        ),
       );
     }
     return completed;
   } catch (error) {
-    return handleFieldError(error, fieldNodes, path, returnType, exeContext);
+    return handleFieldError(
+      error,
+      fieldNodes,
+      path,
+      returnType,
+      exeContext,
+      errors,
+    );
   }
 }
 
-function handleFieldError(rawError, fieldNodes, path, returnType, exeContext) {
+function handleFieldError(
+  rawError,
+  fieldNodes,
+  path,
+  returnType,
+  exeContext,
+  errors,
+) {
   const error = locatedError(
     asErrorInstance(rawError),
     fieldNodes,
@@ -802,7 +931,11 @@ function handleFieldError(rawError, fieldNodes, path, returnType, exeContext) {
 
   // Otherwise, error protection is applied, logging the error and resolving
   // a null value for this field if one is encountered.
-  exeContext.errors.push(error);
+  if (errors) {
+    errors.push(error);
+  } else {
+    exeContext.errors.push(error);
+  }
   return null;
 }
 
@@ -834,6 +967,7 @@ function completeValue(
   info: GraphQLResolveInfo,
   path: Path,
   result: mixed,
+  errors?: Array<GraphQLError>,
 ): PromiseOrValue<mixed> {
   // If result is an Error, throw a located error.
   if (result instanceof Error) {
@@ -850,6 +984,7 @@ function completeValue(
       info,
       path,
       result,
+      errors,
     );
     if (completed === null) {
       throw new Error(
@@ -873,6 +1008,7 @@ function completeValue(
       info,
       path,
       result,
+      errors,
     );
   }
 
@@ -892,6 +1028,7 @@ function completeValue(
       info,
       path,
       result,
+      errors,
     );
   }
 
@@ -905,6 +1042,7 @@ function completeValue(
       info,
       path,
       result,
+      errors,
     );
   }
 
@@ -927,6 +1065,7 @@ function completeListValue(
   info: GraphQLResolveInfo,
   path: Path,
   result: mixed,
+  errors?: Array<GraphQLError>,
 ): PromiseOrValue<$ReadOnlyArray<mixed>> {
   if (!isCollection(result)) {
     throw new GraphQLError(
@@ -949,6 +1088,7 @@ function completeListValue(
       info,
       fieldPath,
       item,
+      errors,
     );
 
     if (!containsPromise && isPromise(completedItem)) {
@@ -987,6 +1127,7 @@ function completeAbstractValue(
   info: GraphQLResolveInfo,
   path: Path,
   result: mixed,
+  errors?: Array<GraphQLError>,
 ): PromiseOrValue<ObjMap<mixed>> {
   const resolveTypeFn = returnType.resolveType ?? exeContext.typeResolver;
   const contextValue = exeContext.contextValue;
@@ -1008,6 +1149,7 @@ function completeAbstractValue(
         info,
         path,
         result,
+        errors,
       ),
     );
   }
@@ -1026,6 +1168,7 @@ function completeAbstractValue(
     info,
     path,
     result,
+    errors,
   );
 }
 
@@ -1071,6 +1214,7 @@ function completeObjectValue(
   info: GraphQLResolveInfo,
   path: Path,
   result: mixed,
+  errors?: Array<GraphQLError>,
 ): PromiseOrValue<ObjMap<mixed>> {
   // If there is an isTypeOf predicate function, call it with the
   // current result. If isTypeOf returns false, then raise an error rather
@@ -1089,6 +1233,7 @@ function completeObjectValue(
           fieldNodes,
           path,
           result,
+          errors,
         );
       });
     }
@@ -1104,6 +1249,7 @@ function completeObjectValue(
     fieldNodes,
     path,
     result,
+    errors,
   );
 }
 
@@ -1124,10 +1270,44 @@ function collectAndExecuteSubfields(
   fieldNodes: $ReadOnlyArray<FieldNode>,
   path: Path,
   result: mixed,
+  errors?: Array<GraphQLError>,
 ): PromiseOrValue<ObjMap<mixed>> {
   // Collect sub-fields to execute to complete this value.
-  const subFieldNodes = collectSubfields(exeContext, returnType, fieldNodes);
-  return executeFields(exeContext, returnType, result, path, subFieldNodes);
+  const { fields: subFieldNodes, patches: subPatches } = collectSubfields(
+    exeContext,
+    returnType,
+    fieldNodes,
+  );
+
+  const subFields = executeFields(
+    exeContext,
+    returnType,
+    result,
+    path,
+    subFieldNodes,
+    errors,
+  );
+
+  for (const subPatch of subPatches) {
+    const { label, fields: subPatchFieldNodes } = subPatch;
+    const subPatchErrors = [];
+    exeContext.dispatcher.add(
+      label,
+      path,
+      () =>
+        executeFields(
+          exeContext,
+          returnType,
+          result,
+          path,
+          subPatchFieldNodes,
+          subPatchErrors,
+        ),
+      subPatchErrors,
+    );
+  }
+
+  return subFields;
 }
 
 /**
@@ -1140,21 +1320,25 @@ function _collectSubfields(
   exeContext: ExecutionContext,
   returnType: GraphQLObjectType,
   fieldNodes: $ReadOnlyArray<FieldNode>,
-): ObjMap<Array<FieldNode>> {
-  let subFieldNodes = Object.create(null);
+): FieldsAndPatches {
+  let subFieldsAndPatches = {};
+  const subFieldNodes = Object.create(null);
   const visitedFragmentNames = Object.create(null);
+  const subPatches = [];
+
   for (const node of fieldNodes) {
     if (node.selectionSet) {
-      subFieldNodes = collectFields(
+      subFieldsAndPatches = collectFields(
         exeContext,
         returnType,
         node.selectionSet,
         subFieldNodes,
+        subPatches,
         visitedFragmentNames,
       );
     }
   }
-  return subFieldNodes;
+  return subFieldsAndPatches;
 }
 
 /**
