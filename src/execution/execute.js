@@ -15,6 +15,7 @@ import isCollection from '../jsutils/isCollection';
 import promiseReduce from '../jsutils/promiseReduce';
 import promiseForObject from '../jsutils/promiseForObject';
 import { addPath, pathToArray } from '../jsutils/Path';
+import { Dispatcher, type ExecutionPatchResult } from '../type/dispatcher';
 
 import type { GraphQLFormattedError } from '../error/formatError';
 import { GraphQLError } from '../error/GraphQLError';
@@ -44,7 +45,6 @@ import type {
   GraphQLList,
 } from '../type/definition';
 import { assertValidSchema } from '../type/validate';
-import { Dispatcher, type ExecutionPatchResult } from '../type/dispatcher';
 import {
   SchemaMetaFieldDef,
   TypeMetaFieldDef,
