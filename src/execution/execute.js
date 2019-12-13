@@ -14,6 +14,7 @@ import promiseReduce from '../jsutils/promiseReduce';
 import promiseForObject from '../jsutils/promiseForObject';
 import { type PromiseOrValue } from '../jsutils/PromiseOrValue';
 import { type Path, addPath, pathToArray } from '../jsutils/Path';
+import { Dispatcher, type ExecutionPatchResult } from '../type/dispatcher';
 
 import { GraphQLError } from '../error/GraphQLError';
 import { locatedError } from '../error/locatedError';
@@ -31,7 +32,6 @@ import {
 
 import { assertValidSchema } from '../type/validate';
 import { type GraphQLSchema } from '../type/schema';
-import { Dispatcher, type ExecutionPatchResult } from '../type/dispatcher';
 import {
   SchemaMetaFieldDef,
   TypeMetaFieldDef,
