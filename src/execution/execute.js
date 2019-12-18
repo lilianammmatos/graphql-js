@@ -1065,6 +1065,8 @@ function completeListValue(
         exeContext.schema.__experimentalStream &&
         stream &&
         stream.if !== false &&
+        typeof stream.label === 'string' &&
+        typeof stream.initial_count === 'number' &&
         index >= stream.initial_count
       ) {
         const patchErrors = [];
