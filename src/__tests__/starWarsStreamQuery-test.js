@@ -129,12 +129,12 @@ describe('Star Wars Query Stream Tests', () => {
           friends: [
             {
               id: '1000',
-              appearsIn: ['NEWHOPE', 'EMPIRE', 'JEDI'],
+              appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
               name: 'Luke Skywalker',
             },
             {
               id: '1002',
-              appearsIn: ['NEWHOPE', 'EMPIRE', 'JEDI'],
+              appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
             },
             {
               id: '1003',
@@ -171,7 +171,7 @@ describe('Star Wars Query Stream Tests', () => {
 
     expect(patches[2]).to.deep.equal({
       data: {
-        appearsIn: ['NEWHOPE', 'EMPIRE', 'JEDI'],
+        appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
       },
       path: ['hero', 'friends', 2],
       label: 'appearsInLabel',
