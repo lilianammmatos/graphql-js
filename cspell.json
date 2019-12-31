@@ -9,6 +9,7 @@
     "tsutils",
     "iterall",
     "noflow",
+    "camelcase",
 
     // Different names used inside tests
     "Skywalker",
