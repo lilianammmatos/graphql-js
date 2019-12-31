@@ -5,6 +5,12 @@
     "src/__fixtures__/github-schema.json"
   ],
   "words": [
+    "jsutils",
+    "tsutils",
+    "noflow",
+    "flowlint",
+    "camelcase",
+
     // Different names used inside tests
     "Skywalker",
     "Leia",
