@@ -128,7 +128,7 @@ describe('Star Wars Query Deferred Tests', () => {
         label: 'DeferNested',
         path: ['hero'],
         data: {
-          appearsIn: ['NEWHOPE', 'EMPIRE', 'JEDI'],
+          appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
           primaryFunction: 'Astromech',
         },
       });
