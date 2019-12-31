@@ -347,7 +347,7 @@ export function buildExecutionContext(
     variableValues: coercedVariableValues.coerced,
     fieldResolver: fieldResolver || defaultFieldResolver,
     typeResolver: typeResolver || defaultTypeResolver,
-    // TODO: Pass these properties in from buildExecution arugments
+    // TODO: Pass these properties in from buildExecution arguments
     dispatcher: new Dispatcher(),
     errors: [],
   };
@@ -392,7 +392,7 @@ function executeOperation(
 
         exeContext.dispatcher.add(
           label,
-          // TODO: `path` is initially "undefined", which essentialy means "root",
+          // TODO: `path` is initially "undefined", which essentially means "root",
           // investigate if "undefined" is a valid path value.
           path,
           () =>
