@@ -112,11 +112,19 @@ export function buildASTSchema(
     directives.push(GraphQLIncludeDirective);
   }
 
-  if (!directives.some(directive => directive.name === 'defer')) {
+  if (
+    options &&
+    options.experimentalDeferFragmentSpreads &&
+    !directives.some(directive => directive.name === 'defer')
+  ) {
     directives.push(GraphQLDeferDirective);
   }
 
-  if (!directives.some(directive => directive.name === 'stream')) {
+  if (
+    options &&
+    options.experimentalStream &&
+    !directives.some(directive => directive.name === 'stream')
+  ) {
     directives.push(GraphQLStreamDirective);
   }
 

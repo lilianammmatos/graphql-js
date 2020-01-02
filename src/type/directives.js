@@ -19,7 +19,7 @@ import type {
   GraphQLArgument,
   GraphQLFieldConfigArgumentMap,
 } from './definition';
-import { GraphQLString, GraphQLBoolean } from './scalars';
+import { GraphQLString, GraphQLBoolean, GraphQLInt } from './scalars';
 import { argsToArgsConfig, GraphQLNonNull } from './definition';
 
 /**
@@ -211,6 +211,7 @@ export const GraphQLStreamDirective = new GraphQLDirective({
       type: GraphQLNonNull(GraphQLString),
       description: 'Unique name',
     },
+    // eslint-disable-next-line camelcase
     initial_count: {
       type: GraphQLNonNull(GraphQLInt),
       description: 'Number of items to return immediately',
