@@ -137,7 +137,7 @@ export class GraphQLSchema {
   // Used as a cache for validateSchema().
   __validationErrors: ?$ReadOnlyArray<GraphQLError>;
   // Referenced by execute()
-  __experimentalDeferFragmentSpreads: boolean;
+  __experimentalDefer: boolean;
   __experimentalStream: boolean;
 
   constructor(config: $ReadOnly<GraphQLSchemaConfig>): void {
@@ -173,11 +173,11 @@ export class GraphQLSchema {
     // Provide specified directives (e.g. @include and @skip) by default.
     this._directives = config.directives || specifiedDirectives;
 
-    if (config.experimentalDeferFragmentSpreads) {
-      this.__experimentalDeferFragmentSpreads = true;
+    if (config.__experimentalDefer) {
+      this.____experimentalDefer = true;
       this._directives = [].concat(this._directives, [GraphQLDeferDirective]);
     } else {
-      this.__experimentalDeferFragmentSpreads = false;
+      this.____experimentalDefer = false;
     }
 
     if (config.experimentalStream) {
@@ -335,7 +335,7 @@ export type GraphQLSchemaValidationOptions = {|
    *
    * Default: false
    */
-  experimentalDeferFragmentSpreads?: boolean,
+  experimentalDefer?: boolean,
 
   /**
    *

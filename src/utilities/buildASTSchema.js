@@ -109,7 +109,7 @@ export function buildASTSchema(
 
   if (
     options &&
-    options.experimentalDeferFragmentSpreads &&
+    options.experimentalDefer &&
     !directives.some(directive => directive.name === 'defer')
   ) {
     directives.push(GraphQLDeferDirective);
