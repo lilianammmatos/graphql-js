@@ -7,6 +7,7 @@ import { GraphQLSchema } from '../../type/schema';
 import {
   GraphQLSkipDirective,
   GraphQLDeferDirective,
+  GraphQLStreamDirective,
   GraphQLIncludeDirective,
   GraphQLSpecifiedByDirective,
   GraphQLDeprecatedDirective,
@@ -806,6 +807,7 @@ describe('findBreakingChanges', () => {
         GraphQLIncludeDirective,
         GraphQLSpecifiedByDirective,
         GraphQLDeferDirective,
+        GraphQLStreamDirective,
       ],
     });
 
