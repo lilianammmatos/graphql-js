@@ -20,7 +20,7 @@ import {
   type DirectiveLocationEnum,
 } from '../language/directiveLocation';
 
-import { GraphQLString, GraphQLBoolean } from './scalars';
+import { GraphQLString, GraphQLBoolean, GraphQLInt } from './scalars';
 import {
   type GraphQLFieldConfigArgumentMap,
   type GraphQLArgument,
@@ -217,6 +217,7 @@ export const GraphQLStreamDirective = new GraphQLDirective({
       type: GraphQLNonNull(GraphQLString),
       description: 'Unique name',
     },
+    // eslint-disable-next-line camelcase
     initial_count: {
       type: GraphQLNonNull(GraphQLInt),
       description: 'Number of items to return immediately',
