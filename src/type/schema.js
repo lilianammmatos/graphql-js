@@ -25,6 +25,8 @@ import {
 import { __Schema } from './introspection';
 import {
   GraphQLDirective,
+  GraphQLStreamDirective,
+  GraphQLDeferDirective,
   isDirective,
   specifiedDirectives,
 } from './directives';
@@ -141,6 +143,7 @@ export class GraphQLSchema {
   __validationErrors: ?$ReadOnlyArray<GraphQLError>;
   // Referenced by execute()
   __experimentalDeferFragmentSpreads: boolean;
+  __experimentalStream: boolean;
 
   constructor(config: $ReadOnly<GraphQLSchemaConfig>): void {
     // If this schema was built from a source known to be valid, then it may be
@@ -163,8 +166,7 @@ export class GraphQLSchema {
     this.astNode = config.astNode;
     this.extensionASTNodes = config.extensionASTNodes;
 
-    this.__experimentalDeferFragmentSpreads =
-      config.experimentalDeferFragmentSpreads || false;
+    this.__experimentalStream = config.experimentalStream || false;
     this._queryType = config.query;
     this._mutationType = config.mutation;
     this._subscriptionType = config.subscription;
@@ -181,6 +183,19 @@ export class GraphQLSchema {
         allReferencedTypes.delete(type);
         collectReferencedTypes(type, allReferencedTypes);
       }
+    }
+    if (config.experimentalDeferFragmentSpreads) {
+      this.__experimentalDeferFragmentSpreads = true;
+      this._directives = [].concat(this._directives, [GraphQLDeferDirective]);
+    } else {
+      this.__experimentalDeferFragmentSpreads = false;
+    }
+
+    if (config.experimentalStream) {
+      this.__experimentalStream = true;
+      this._directives = [].concat(this._directives, [GraphQLStreamDirective]);
+    } else {
+      this.__experimentalStream = false;
     }
 
     if (this._queryType != null) {
@@ -380,6 +395,18 @@ export type GraphQLSchemaValidationOptions = {|
    * Default: false
    */
   experimentalDeferFragmentSpreads?: boolean,
+
+  /**
+   *
+   * EXPERIMENTAL:
+   *
+   * If enabled, items from a plural fields with @stream directive
+   * are not returned from the iniital query and each item is returned
+   * in a patch after the initial result from the synchronous query.
+   *
+   * Default: false
+   */
+  experimentalStream?: boolean,
 |};
 
 export type GraphQLSchemaConfig = {|
