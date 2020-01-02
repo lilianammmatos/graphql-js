@@ -46,6 +46,39 @@ describe('Star Wars Query Stream Tests', () => {
         },
       });
     });
+    it('Can disable @stream using if argument', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          hero {
+            friends @stream(initial_count: 0, label: "HeroFriends", if: false) {
+              id
+              name
+            }
+          }
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      expect(result).to.deep.equal({
+        data: {
+          hero: {
+            friends: [
+              {
+                id: '1000',
+                name: 'Luke Skywalker',
+              },
+              {
+                id: '1002',
+                name: 'Han Solo',
+              },
+              {
+                id: '1003',
+                name: 'Leia Organa',
+              },
+            ],
+          },
+        },
+      });
+    });
   });
 
   describe('Basic Queries', () => {
@@ -97,84 +130,83 @@ describe('Star Wars Query Stream Tests', () => {
         },
       });
     });
-  });
-
-  it('Can @stream multiple selections on the same field', async () => {
-    const query = `
-      query HeroFriendsQuery {
-        hero {
-          friends {
-            id
+    it('Can @stream multiple selections on the same field', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          hero {
+            friends {
+              id
+            }
+            ...FriendsName
+            ...FriendsAppearsIn
           }
-          ...FriendsName
-          ...FriendsAppearsIn
         }
-      }
-      fragment FriendsName on Character {
-        friends @stream(label: "nameLabel", initial_count: 1) {
-          name
+        fragment FriendsName on Character {
+          friends @stream(label: "nameLabel", initial_count: 1) {
+            name
+          }
         }
-      }
-      fragment FriendsAppearsIn on Character {
-        friends @stream(label: "appearsInLabel", initial_count: 2)  {
-          appearsIn
+        fragment FriendsAppearsIn on Character {
+          friends @stream(label: "appearsInLabel", initial_count: 2)  {
+            appearsIn
+          }
         }
-      }
-    `;
-    const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-    const { patches: patchesIterable, ...initial } = result;
-    expect(initial).to.deep.equal({
-      data: {
-        hero: {
-          friends: [
-            {
-              id: '1000',
-              appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
-              name: 'Luke Skywalker',
-            },
-            {
-              id: '1002',
-              appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
-            },
-            {
-              id: '1003',
-            },
-          ],
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      const { patches: patchesIterable, ...initial } = result;
+      expect(initial).to.deep.equal({
+        data: {
+          hero: {
+            friends: [
+              {
+                id: '1000',
+                appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
+                name: 'Luke Skywalker',
+              },
+              {
+                id: '1002',
+                appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
+              },
+              {
+                id: '1003',
+              },
+            ],
+          },
         },
-      },
-    });
-
-    const patches = [];
-
-    if (patchesIterable) {
-      await forAwaitEach(patchesIterable, patch => {
-        patches.push(patch);
       });
-    }
 
-    expect(patches).to.have.lengthOf(3);
-    expect(patches[0]).to.deep.equal({
-      data: {
-        name: 'Han Solo',
-      },
-      path: ['hero', 'friends', 1],
-      label: 'nameLabel',
-    });
+      const patches = [];
 
-    expect(patches[1]).to.deep.equal({
-      data: {
-        name: 'Leia Organa',
-      },
-      path: ['hero', 'friends', 2],
-      label: 'nameLabel',
-    });
+      if (patchesIterable) {
+        await forAwaitEach(patchesIterable, patch => {
+          patches.push(patch);
+        });
+      }
 
-    expect(patches[2]).to.deep.equal({
-      data: {
-        appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
-      },
-      path: ['hero', 'friends', 2],
-      label: 'appearsInLabel',
+      expect(patches).to.have.lengthOf(3);
+      expect(patches[0]).to.deep.equal({
+        data: {
+          name: 'Han Solo',
+        },
+        path: ['hero', 'friends', 1],
+        label: 'nameLabel',
+      });
+
+      expect(patches[1]).to.deep.equal({
+        data: {
+          name: 'Leia Organa',
+        },
+        path: ['hero', 'friends', 2],
+        label: 'nameLabel',
+      });
+
+      expect(patches[2]).to.deep.equal({
+        data: {
+          appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
+        },
+        path: ['hero', 'friends', 2],
+        label: 'appearsInLabel',
+      });
     });
   });
 });
