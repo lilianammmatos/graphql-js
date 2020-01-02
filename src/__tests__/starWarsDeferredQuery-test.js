@@ -25,12 +25,12 @@ describe('Star Wars Query Deferred Tests', () => {
       `;
       const result = await graphql(StarWarsSchema, query);
       expect(result).to.deep.equal({
-        data: {
-          hero: {
-            id: '2001',
-            name: 'R2-D2',
+        errors: [
+          {
+            message: 'Unknown directive "@defer".',
+            locations: [{ line: 5, column: 29 }],
           },
-        },
+        ],
       });
     });
   });
@@ -125,7 +125,7 @@ describe('Star Wars Query Deferred Tests', () => {
         label: 'DeferNested',
         path: ['hero'],
         data: {
-          appearsIn: ['NEWHOPE', 'EMPIRE', 'JEDI'],
+          appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
           primaryFunction: 'Astromech',
         },
       });
