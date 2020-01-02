@@ -188,7 +188,6 @@ export const GraphQLDeferDirective = new GraphQLDirective({
     label: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Unique name',
-      // TODO: Add defaultValue for label?
     },
   },
 });
