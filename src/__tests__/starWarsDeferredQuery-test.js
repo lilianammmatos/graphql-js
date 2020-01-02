@@ -106,8 +106,8 @@ describe('Star Wars Query Deferred Tests', () => {
       `;
 
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...rest } = result;
-      expect(rest).to.deep.equal({
+      const { patches: patchesIterable, ...initial } = result;
+      expect(initial).to.deep.equal({
         data: {
           hero: {
             id: '2001',
@@ -149,6 +149,49 @@ describe('Star Wars Query Deferred Tests', () => {
   // TODO
   // describe('Using aliases to change the key in the response', () => {});
 
+  describe('Inline Fragments', () => {
+    it('Allows us to defer an inline fragment', async () => {
+      const query = `
+        query UserFragment {
+          human(id: "1003") {
+            id
+            ... on Human @defer(label: "InlineDeferred"){
+              name
+              homePlanet
+            }
+          }
+        }
+
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      const { patches: patchesIterable, ...initial } = result;
+      expect(initial).to.deep.equal({
+        data: {
+          human: {
+            id: '1003',
+          },
+        },
+      });
+
+      const patches = [];
+
+      if (patchesIterable) {
+        await forAwaitEach(patchesIterable, patch => {
+          patches.push(patch);
+        });
+      }
+      expect(patches).to.have.lengthOf(1);
+      expect(patches[0]).to.deep.equal({
+        label: 'InlineDeferred',
+        path: ['human'],
+        data: {
+          name: 'Leia Organa',
+          homePlanet: 'Alderaan',
+        },
+      });
+    });
+  });
+
   describe('Uses fragments to express more complex queries', () => {
     it('Allows us to use a fragment to avoid duplicating content', async () => {
       const query = `
@@ -183,9 +226,9 @@ describe('Star Wars Query Deferred Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...rest } = result;
+      const { patches: patchesIterable, ...initial } = result;
 
-      expect(rest).to.deep.equal({
+      expect(initial).to.deep.equal({
         data: {
           han: {
             __typename: 'Human',

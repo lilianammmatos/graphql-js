@@ -575,26 +575,47 @@ export function collectFields(
         ) {
           continue;
         }
-        collectFields(
-          exeContext,
-          runtimeType,
-          selection.selectionSet,
-          fields,
-          patches,
-          visitedFragmentNames,
-        );
-        break;
-      }
-      case Kind.FRAGMENT_SPREAD: {
-        const fragName = selection.name.value;
 
         const patchLabel = exeContext.schema.__experimentalDeferFragmentSpreads
           ? getDeferredNodeLabel(exeContext, selection)
           : '';
 
+        if (patchLabel) {
+          const { fields: patchFields } = collectFields(
+            exeContext,
+            runtimeType,
+            selection.selectionSet,
+            Object.create(null),
+            patches,
+            visitedFragmentNames,
+          );
+          patches.push({
+            label: patchLabel,
+            fields: patchFields,
+          });
+        } else {
+          collectFields(
+            exeContext,
+            runtimeType,
+            selection.selectionSet,
+            fields,
+            patches,
+            visitedFragmentNames,
+          );
+        }
+        break;
+      }
+      case Kind.FRAGMENT_SPREAD: {
+        const fragName = selection.name.value;
+
         if (!shouldIncludeNode(exeContext, selection)) {
           continue;
         }
+
+        const patchLabel = exeContext.schema.__experimentalDeferFragmentSpreads
+          ? getDeferredNodeLabel(exeContext, selection)
+          : '';
+
         if (
           visitedFragmentNames[fragName] &&
           // Cannot continue in this case because fields must be recollected for patch
