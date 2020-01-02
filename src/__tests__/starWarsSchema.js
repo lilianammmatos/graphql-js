@@ -315,6 +315,6 @@ export const StarWarsSchema: GraphQLSchema = new GraphQLSchema({
 export const StarWarsSchemaDeferStreamEnabled = new GraphQLSchema({
   query: queryType,
   types: [humanType, droidType],
-  experimentalDeferFragmentSpreads: true,
+  experimentalDefer: true,
   experimentalStream: true,
 });
