@@ -576,7 +576,7 @@ export function collectFields(
           continue;
         }
 
-        const patchLabel = exeContext.schema.__experimentalDeferFragmentSpreads
+        const patchLabel = exeContext.schema.__experimentalDefer
           ? getDeferredNodeLabel(exeContext, selection)
           : '';
 
@@ -612,7 +612,7 @@ export function collectFields(
           continue;
         }
 
-        const patchLabel = exeContext.schema.__experimentalDeferFragmentSpreads
+        const patchLabel = exeContext.schema.__experimentalDefer
           ? getDeferredNodeLabel(exeContext, selection)
           : '';
 
