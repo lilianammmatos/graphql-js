@@ -137,8 +137,8 @@ export class GraphQLSchema {
   // Used as a cache for validateSchema().
   __validationErrors: ?$ReadOnlyArray<GraphQLError>;
   // Referenced by execute()
-  __experimentalDefer: boolean;
-  __experimentalStream: boolean;
+  __experimentalDefer: ?boolean;
+  __experimentalStream: ?boolean;
 
   constructor(config: $ReadOnly<GraphQLSchemaConfig>): void {
     // If this schema was built from a source known to be valid, then it may be
@@ -166,25 +166,20 @@ export class GraphQLSchema {
     this.astNode = config.astNode;
     this.extensionASTNodes = config.extensionASTNodes;
 
-    this.__experimentalStream = config.experimentalStream || false;
     this._queryType = config.query;
     this._mutationType = config.mutation;
     this._subscriptionType = config.subscription;
     // Provide specified directives (e.g. @include and @skip) by default.
     this._directives = config.directives || specifiedDirectives;
 
-    if (config.__experimentalDefer) {
-      this.____experimentalDefer = true;
+    if (config.experimentalDefer) {
+      this.__experimentalDefer = true;
       this._directives = [].concat(this._directives, [GraphQLDeferDirective]);
-    } else {
-      this.____experimentalDefer = false;
     }
 
     if (config.experimentalStream) {
       this.__experimentalStream = true;
       this._directives = [].concat(this._directives, [GraphQLStreamDirective]);
-    } else {
-      this.__experimentalStream = false;
     }
 
     // Build type map now to detect any errors within this schema.

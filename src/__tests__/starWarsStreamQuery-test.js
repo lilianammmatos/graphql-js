@@ -13,7 +13,7 @@ import {
 
 describe('Star Wars Query Stream Tests', () => {
   describe('Compatibility', () => {
-    it('Can disable @stream and return would-be streamed data as part of initial result', async () => {
+    it('Should throw error if using @stream without enabling in the schema', async () => {
       const query = `
         query HeroFriendsQuery {
           hero {
@@ -26,24 +26,12 @@ describe('Star Wars Query Stream Tests', () => {
       `;
       const result = await graphql(StarWarsSchema, query);
       expect(result).to.deep.equal({
-        data: {
-          hero: {
-            friends: [
-              {
-                id: '1000',
-                name: 'Luke Skywalker',
-              },
-              {
-                id: '1002',
-                name: 'Han Solo',
-              },
-              {
-                id: '1003',
-                name: 'Leia Organa',
-              },
-            ],
+        errors: [
+          {
+            message: 'Unknown directive "@stream".',
+            locations: [{ line: 4, column: 21 }],
           },
-        },
+        ],
       });
     });
     it('Can disable @stream using if argument', async () => {
