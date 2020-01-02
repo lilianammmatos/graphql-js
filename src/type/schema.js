@@ -25,8 +25,8 @@ import {
 import { __Schema } from './introspection';
 import {
   GraphQLDirective,
-  GraphQLStreamDirective,
   GraphQLDeferDirective,
+  GraphQLStreamDirective,
   isDirective,
   specifiedDirectives,
 } from './directives';

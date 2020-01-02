@@ -394,8 +394,6 @@ function executeOperation(
 
         exeContext.dispatcher.add(
           label,
-          // TODO: `path` is initially "undefined", which essentially means "root",
-          // investigate if "undefined" is a valid path value.
           path,
           () =>
             executeFields(
