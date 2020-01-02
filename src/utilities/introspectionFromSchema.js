@@ -1,5 +1,6 @@
 // @flow strict
 
+import { isAsyncIterable } from 'iterall';
 import invariant from '../jsutils/invariant';
 import isPromise from '../jsutils/isPromise';
 
@@ -28,6 +29,11 @@ export function introspectionFromSchema(
 ): IntrospectionQuery {
   const document = parse(getIntrospectionQuery(options));
   const result = execute({ schema, document });
-  invariant(!isPromise(result) && !result.errors && result.data);
+  invariant(
+    !isPromise(result) &&
+      result.errors === undefined &&
+      result.data !== null &&
+      result.data !== undefined,
+  );
   return (result.data: any);
 }

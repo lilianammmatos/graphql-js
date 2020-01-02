@@ -1,6 +1,6 @@
 // @flow strict
 
-import { forAwaitEach } from 'iterall';
+import { forAwaitEach, isAsyncIterable } from 'iterall';
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
 
@@ -25,6 +25,7 @@ describe('Star Wars Query Stream Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchema, query);
+      expect(isAsyncIterable(result)).to.equal(false);
       expect(result).to.deep.equal({
         data: {
           hero: {
@@ -58,6 +59,7 @@ describe('Star Wars Query Stream Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      expect(isAsyncIterable(result)).to.equal(false);
       expect(result).to.deep.equal({
         data: {
           hero: {
@@ -94,8 +96,13 @@ describe('Star Wars Query Stream Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-      expect(initial).to.deep.equal({
+      expect(isAsyncIterable(result)).to.equal(true);
+      const results = [];
+      await forAwaitEach(result, patch => {
+        results.push(patch);
+      });
+      expect(results).to.have.lengthOf(2);
+      expect(results[0]).to.deep.equal({
         data: {
           hero: {
             friends: [
@@ -112,16 +119,7 @@ describe('Star Wars Query Stream Tests', () => {
         },
       });
 
-      const patches = [];
-
-      if (patchesIterable) {
-        await forAwaitEach(patchesIterable, patch => {
-          patches.push(patch);
-        });
-      }
-
-      expect(patches).to.have.lengthOf(1);
-      expect(patches[0]).to.deep.equal({
+      expect(results[1]).to.deep.equal({
         label: 'HeroFriends',
         path: ['hero', 'friends', 2],
         data: {
@@ -153,8 +151,13 @@ describe('Star Wars Query Stream Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-      expect(initial).to.deep.equal({
+      expect(isAsyncIterable(result)).to.equal(true);
+      const results = [];
+      await forAwaitEach(result, patch => {
+        results.push(patch);
+      });
+      expect(results).to.have.lengthOf(4);
+      expect(results[0]).to.deep.equal({
         data: {
           hero: {
             friends: [
@@ -175,16 +178,7 @@ describe('Star Wars Query Stream Tests', () => {
         },
       });
 
-      const patches = [];
-
-      if (patchesIterable) {
-        await forAwaitEach(patchesIterable, patch => {
-          patches.push(patch);
-        });
-      }
-
-      expect(patches).to.have.lengthOf(3);
-      expect(patches[0]).to.deep.equal({
+      expect(results[1]).to.deep.equal({
         data: {
           name: 'Han Solo',
         },
@@ -192,7 +186,7 @@ describe('Star Wars Query Stream Tests', () => {
         label: 'nameLabel',
       });
 
-      expect(patches[1]).to.deep.equal({
+      expect(results[2]).to.deep.equal({
         data: {
           name: 'Leia Organa',
         },
@@ -200,7 +194,7 @@ describe('Star Wars Query Stream Tests', () => {
         label: 'nameLabel',
       });
 
-      expect(patches[2]).to.deep.equal({
+      expect(results[3]).to.deep.equal({
         data: {
           appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
         },

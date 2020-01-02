@@ -3,7 +3,13 @@
 import { $$asyncIterator } from 'iterall';
 
 import { type Path, pathToArray } from '../jsutils/Path';
+import { type ObjMap } from '../jsutils/ObjMap';
 import { type PromiseOrValue } from '../jsutils/PromiseOrValue';
+import {
+  type ExecutionResult,
+  type ExecutionPatchResult,
+  type AsyncExecutionResult,
+} from '../execution/execute';
 import isPromise from '../jsutils/isPromise';
 
 import { GraphQLError } from '../error/GraphQLError';
@@ -24,10 +30,14 @@ export class Dispatcher {
     }
   }
 
+  hasPatches() {
+    return this._patches.length !== 0;
+  }
+
   add(
     label: string,
     path: Path | void,
-    fn: () => PromiseOrValue<mixed>,
+    fn: () => PromiseOrValue<ObjMap<mixed> | mixed>,
     errors: Array<GraphQLError>,
   ) {
     this._patches.push(
@@ -43,12 +53,22 @@ export class Dispatcher {
             done: false,
           }));
         }
+        if (errors && errors.length > 0) {
+          return {
+            value: {
+              data,
+              path: pathToArray(path),
+              label,
+              errors,
+            },
+            done: false,
+          };
+        }
         return {
           value: {
             data,
             path: pathToArray(path),
             label,
-            ...(errors && errors.length > 0 ? { errors } : {}),
           },
           done: false,
         };
@@ -56,10 +76,10 @@ export class Dispatcher {
     );
   }
 
-  get(): AsyncIterable<ExecutionPatchResult> | null {
-    if (this._patches.length === 0) {
-      return null;
-    }
+  get(
+    initialResult: PromiseOrValue<ExecutionResult>,
+  ): AsyncIterator<AsyncExecutionResult> {
+    let hasReturnedInitialResult = false;
     const results = this._patches;
 
     function race(promises) {
@@ -73,7 +93,13 @@ export class Dispatcher {
     }
 
     const getNext = promises => {
-      if (promises.length === 0) {
+      if (!hasReturnedInitialResult) {
+        hasReturnedInitialResult = true;
+        if (isPromise(initialResult)) {
+          return initialResult.then(value => ({ value, done: false }));
+        }
+        return Promise.resolve({ value: initialResult, done: false });
+      } else if (promises.length === 0) {
         return Promise.resolve({ value: undefined, done: true });
       }
       return race(promises).then(({ result, index }) => {
@@ -92,11 +118,3 @@ export class Dispatcher {
     }: any);
   }
 }
-
-export type ExecutionPatchResult = {
-  errors?: $ReadOnlyArray<GraphQLError>,
-  data?: mixed | null,
-  path: $ReadOnlyArray<string | number>,
-  label: string,
-  ...
-};

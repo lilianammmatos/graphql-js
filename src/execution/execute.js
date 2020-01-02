@@ -15,7 +15,7 @@ import promiseReduce from '../jsutils/promiseReduce';
 import promiseForObject from '../jsutils/promiseForObject';
 import { type PromiseOrValue } from '../jsutils/PromiseOrValue';
 import { type Path, addPath, pathToArray } from '../jsutils/Path';
-import { Dispatcher, type ExecutionPatchResult } from '../type/dispatcher';
+import { Dispatcher } from '../type/dispatcher';
 
 import { GraphQLError } from '../error/GraphQLError';
 import { locatedError } from '../error/locatedError';
@@ -118,8 +118,24 @@ export type ExecutionContext = {|
 export type ExecutionResult = {|
   errors?: $ReadOnlyArray<GraphQLError>,
   data?: ObjMap<mixed> | null,
-  patches?: AsyncIterable<ExecutionPatchResult>,
 |};
+
+/**
+ * The result of an asynchronous GraphQL patch.
+ *
+ *   - `errors` is included when any errors occurred as a non-empty array.
+ *   - `data` is the result of the additional asynchronous data.
+ *   - `path` is the location of data .
+ *   - `label` is the label provided to @defer or @stream.
+ */
+export type ExecutionPatchResult = {|
+  errors?: $ReadOnlyArray<GraphQLError>,
+  data?: ObjMap<mixed> | mixed | null,
+  path: $ReadOnlyArray<string | number>,
+  label: string,
+|};
+
+export type AsyncExecutionResult = ExecutionResult | ExecutionPatchResult;
 
 export type ExecutionArgs = {|
   schema: GraphQLSchema,
@@ -153,7 +169,7 @@ export type FieldsAndPatches = {
 declare function execute(
   ExecutionArgs,
   ..._: []
-): PromiseOrValue<ExecutionResult>;
+): AsyncIterator<AsyncExecutionResult> | PromiseOrValue<ExecutionResult>;
 /* eslint-disable no-redeclare */
 declare function execute(
   schema: GraphQLSchema,
@@ -164,7 +180,7 @@ declare function execute(
   operationName?: ?string,
   fieldResolver?: ?GraphQLFieldResolver<any, any>,
   typeResolver?: ?GraphQLTypeResolver<any, any>,
-): PromiseOrValue<ExecutionResult>;
+): AsyncIterator<AsyncExecutionResult> | PromiseOrValue<ExecutionResult>;
 export function execute(
   argsOrSchema,
   document,
@@ -191,7 +207,9 @@ export function execute(
       });
 }
 
-function executeImpl(args: ExecutionArgs): PromiseOrValue<ExecutionResult> {
+function executeImpl(
+  args: ExecutionArgs,
+): AsyncIterator<AsyncExecutionResult> | PromiseOrValue<ExecutionResult> {
   const {
     schema,
     document,
@@ -232,7 +250,22 @@ function executeImpl(args: ExecutionArgs): PromiseOrValue<ExecutionResult> {
   // be executed. An execution which encounters errors will still result in a
   // resolved Promise.
   const data = executeOperation(exeContext, exeContext.operation, rootValue);
-  return buildResponse(exeContext, data);
+  return prepareResponse(exeContext, data);
+}
+
+/**
+ * Determines if the final result should be an AsyncIterable
+ */
+function prepareResponse(
+  exeContext: ExecutionContext,
+  data: PromiseOrValue<ObjMap<mixed> | null>,
+): AsyncIterator<AsyncExecutionResult> | PromiseOrValue<ExecutionResult> {
+  const initialResult = buildResponse(exeContext, data);
+  if (exeContext.dispatcher.hasPatches()) {
+    return exeContext.dispatcher.get(initialResult);
+  }
+
+  return initialResult;
 }
 
 /**
@@ -246,13 +279,9 @@ function buildResponse(
   if (isPromise(data)) {
     return data.then(resolved => buildResponse(exeContext, resolved));
   }
-  const patches = exeContext.dispatcher.get();
-  const response =
-    exeContext.errors.length === 0
-      ? { data }
-      : { errors: exeContext.errors, data };
-
-  return patches ? { ...response, patches } : response;
+  return exeContext.errors.length === 0
+    ? { data }
+    : { errors: exeContext.errors, data };
 }
 
 /**
