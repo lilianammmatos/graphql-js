@@ -13,7 +13,7 @@ import {
 
 describe('Star Wars Query Deferred Tests', () => {
   describe('Compatibility', () => {
-    it('Can disable @defer and return would-be deferred data as part of initial result', async () => {
+    it('Should throw error if using @defer without enabling in the schema', async () => {
       const query = `
         query HeroNameQuery {
           hero {
