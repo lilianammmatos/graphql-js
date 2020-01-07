@@ -1375,10 +1375,13 @@ function _collectSubfields(
   returnType: GraphQLObjectType,
   fieldNodes: $ReadOnlyArray<FieldNode>,
 ): FieldsAndPatches {
-  let subFieldsAndPatches = {};
   const subFieldNodes = Object.create(null);
   const visitedFragmentNames = Object.create(null);
   const subPatches = [];
+  let subFieldsAndPatches = {
+    fields: subFieldNodes,
+    patches: subPatches,
+  };
 
   for (const node of fieldNodes) {
     if (node.selectionSet) {
