@@ -69,6 +69,234 @@ describe('Star Wars Query Stream Tests', () => {
     });
   });
 
+  describe('@stream conflict validation', () => {
+    it('Does not allow a mix of @stream and no @stream on the same field', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          hero {
+            friends {
+              id
+            }
+            ...FriendsName
+          }
+        }
+        fragment FriendsName on Character {
+          friends @stream(label: "nameLabel", initial_count: 1) {
+            name
+          }
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      expect(result).to.deep.equal({
+        errors: [
+          {
+            message:
+              'Fields "friends" conflict because they have differing stream directives. Use different aliases on the fields to fetch both if this was intentional.',
+            locations: [
+              {
+                line: 4,
+                column: 13,
+              },
+              {
+                line: 11,
+                column: 11,
+              },
+            ],
+          },
+        ],
+      });
+    });
+    it('Does not allow multiple @stream with different initial_count', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          hero {
+            friends @stream(label: "sameLabel", initial_count: 3) {
+              id
+            }
+            ...FriendsName
+          }
+        }
+        fragment FriendsName on Character {
+          friends @stream(label: "sameLabel", initial_count: 1) {
+            name
+          }
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      expect(result).to.deep.equal({
+        errors: [
+          {
+            message:
+              'Fields "friends" conflict because they have differing stream directives. Use different aliases on the fields to fetch both if this was intentional.',
+            locations: [
+              {
+                line: 4,
+                column: 13,
+              },
+              {
+                line: 11,
+                column: 11,
+              },
+            ],
+          },
+        ],
+      });
+    });
+    it('Does not allow multiple @stream with different label', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          hero {
+            friends @stream(label: "idLabel", initial_count: 1) {
+              id
+            }
+            ...FriendsName
+          }
+        }
+        fragment FriendsName on Character {
+          friends @stream(label: "nameLabel", initial_count: 1) {
+            name
+          }
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      expect(result).to.deep.equal({
+        errors: [
+          {
+            message:
+              'Fields "friends" conflict because they have differing stream directives. Use different aliases on the fields to fetch both if this was intentional.',
+            locations: [
+              {
+                line: 4,
+                column: 13,
+              },
+              {
+                line: 11,
+                column: 11,
+              },
+            ],
+          },
+        ],
+      });
+    });
+    it('Does allow multiple @stream with same label and initial_count', async () => {
+      const query = `
+      query HeroFriendsQuery {
+        hero {
+          friends @stream(label: "sameLabel", initial_count: 2) {
+            id
+          }
+          ...FriendsName
+        }
+      }
+      fragment FriendsName on Character {
+        friends @stream(label: "sameLabel", initial_count: 2) {
+          name
+        }
+      }
+    `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      const { patches: patchesIterable, ...initial } = result;
+
+      expect(initial).to.deep.equal({
+        data: {
+          hero: {
+            friends: [
+              {
+                id: '1000',
+                name: 'Luke Skywalker',
+              },
+              {
+                id: '1002',
+                name: 'Han Solo',
+              },
+            ],
+          },
+        },
+      });
+      const patches = [];
+      if (patchesIterable) {
+        await forAwaitEach(patchesIterable, patch => {
+          patches.push(patch);
+        });
+      }
+      expect(patches).to.have.lengthOf(1);
+      expect(patches[0]).to.deep.equal({
+        data: {
+          id: '1003',
+          name: 'Leia Organa',
+        },
+        path: ['hero', 'friends', 2],
+        label: 'sameLabel',
+      });
+    });
+    it('Does allow multiple @stream with different label and initial_count when fields are aliased', async () => {
+      const query = `
+      query HeroFriendsQuery {
+        hero {
+          friends @stream(label: "idLabel", initial_count: 2) {
+            id
+          }
+          ...FriendsName
+        }
+      }
+      fragment FriendsName on Character {
+        namedFriends: friends @stream(label: "nameLabel", initial_count: 1) {
+          name
+        }
+      }
+    `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      const { patches: patchesIterable, ...initial } = result;
+
+      expect(initial).to.deep.equal({
+        data: {
+          hero: {
+            friends: [
+              {
+                id: '1000',
+              },
+              {
+                id: '1002',
+              },
+            ],
+            namedFriends: [
+              {
+                name: 'Luke Skywalker',
+              },
+            ],
+          },
+        },
+      });
+      const patches = [];
+      if (patchesIterable) {
+        await forAwaitEach(patchesIterable, patch => {
+          patches.push(patch);
+        });
+      }
+      expect(patches).to.have.lengthOf(3);
+      expect(patches[0]).to.deep.equal({
+        data: {
+          id: '1003',
+        },
+        path: ['hero', 'friends', 2],
+        label: 'idLabel',
+      });
+      expect(patches[1]).to.deep.equal({
+        data: {
+          name: 'Han Solo',
+        },
+        path: ['hero', 'namedFriends', 1],
+        label: 'nameLabel',
+      });
+      expect(patches[2]).to.deep.equal({
+        data: {
+          name: 'Leia Organa',
+        },
+        path: ['hero', 'namedFriends', 2],
+        label: 'nameLabel',
+      });
+    });
+  });
   describe('Basic Queries', () => {
     it('Can @stream an array field', async () => {
       const query = `
@@ -118,25 +346,15 @@ describe('Star Wars Query Stream Tests', () => {
         },
       });
     });
-    it('Can @stream multiple selections on the same field', async () => {
+    it('Errors are added to the correct patch', async () => {
       const query = `
         query HeroFriendsQuery {
           hero {
-            friends {
-              id
+            friends @stream(initial_count: 0, label: "HeroFriends") {
+              ... on Human {
+                secretFriend
+              }
             }
-            ...FriendsName
-            ...FriendsAppearsIn
-          }
-        }
-        fragment FriendsName on Character {
-          friends @stream(label: "nameLabel", initial_count: 1) {
-            name
-          }
-        }
-        fragment FriendsAppearsIn on Character {
-          friends @stream(label: "appearsInLabel", initial_count: 2)  {
-            appearsIn
           }
         }
       `;
@@ -145,20 +363,7 @@ describe('Star Wars Query Stream Tests', () => {
       expect(initial).to.deep.equal({
         data: {
           hero: {
-            friends: [
-              {
-                id: '1000',
-                appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
-                name: 'Luke Skywalker',
-              },
-              {
-                id: '1002',
-                appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
-              },
-              {
-                id: '1003',
-              },
-            ],
+            friends: [],
           },
         },
       });
@@ -174,26 +379,60 @@ describe('Star Wars Query Stream Tests', () => {
       expect(patches).to.have.lengthOf(3);
       expect(patches[0]).to.deep.equal({
         data: {
-          name: 'Han Solo',
+          secretFriend: null,
         },
-        path: ['hero', 'friends', 1],
-        label: 'nameLabel',
+        path: ['hero', 'friends', 0],
+        label: 'HeroFriends',
+        errors: [
+          {
+            message: 'secretFriend is secret.',
+            locations: [
+              {
+                line: 6,
+                column: 17,
+              },
+            ],
+            path: ['hero', 'friends', 0, 'secretFriend'],
+          },
+        ],
       });
-
       expect(patches[1]).to.deep.equal({
         data: {
-          name: 'Leia Organa',
+          secretFriend: null,
         },
-        path: ['hero', 'friends', 2],
-        label: 'nameLabel',
+        path: ['hero', 'friends', 1],
+        label: 'HeroFriends',
+        errors: [
+          {
+            message: 'secretFriend is secret.',
+            locations: [
+              {
+                line: 6,
+                column: 17,
+              },
+            ],
+            path: ['hero', 'friends', 1, 'secretFriend'],
+          },
+        ],
       });
-
       expect(patches[2]).to.deep.equal({
         data: {
-          appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
+          secretFriend: null,
         },
         path: ['hero', 'friends', 2],
-        label: 'appearsInLabel',
+        label: 'HeroFriends',
+        errors: [
+          {
+            message: 'secretFriend is secret.',
+            locations: [
+              {
+                line: 6,
+                column: 17,
+              },
+            ],
+            path: ['hero', 'friends', 2, 'secretFriend'],
+          },
+        ],
       });
     });
   });

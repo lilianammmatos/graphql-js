@@ -14,6 +14,7 @@ import type {
   FieldNode,
   ArgumentNode,
   FragmentDefinitionNode,
+  DirectiveNode,
 } from '../../language/ast';
 import { Kind } from '../../language/kinds';
 import { print } from '../../language/printer';
@@ -585,6 +586,13 @@ function findConflict(
         [node2],
       ];
     }
+    if (!sameStreams(node1.directives || [], node2.directives || [])) {
+      return [
+        [responseName, 'they have differing stream directives'],
+        [node1],
+        [node2],
+      ];
+    }
   }
 
   // The return type for each field.
@@ -641,6 +649,60 @@ function sameArguments(
     }
     return sameValue(argument1.value, argument2.value);
   });
+}
+
+function sameDirectiveArgument(
+  directive1: DirectiveNode,
+  directive2: DirectiveNode,
+  argumentName: string,
+): boolean {
+  if (!directive1.arguments) {
+    return false;
+  }
+  const argument1 = find(
+    directive1.arguments,
+    (argument) => argument.name.value === argumentName,
+  );
+  if (!argument1) {
+    return false;
+  }
+  if (!directive2.arguments) {
+    return false;
+  }
+  const argument2 = find(
+    directive2.arguments,
+    (argument) => argument.name.value === argumentName,
+  );
+  if (!argument2) {
+    return false;
+  }
+  return sameValue(argument1.value, argument2.value);
+}
+
+function getStreamDirective(
+  directives: $ReadOnlyArray<DirectiveNode>,
+): ?DirectiveNode {
+  return find(directives, (directive) => directive.name.value === 'stream');
+}
+
+function sameStreams(
+  directives1: $ReadOnlyArray<DirectiveNode>,
+  directives2: $ReadOnlyArray<DirectiveNode>,
+): boolean {
+  const stream1 = getStreamDirective(directives1);
+  const stream2 = getStreamDirective(directives2);
+  if (!stream1 && !stream2) {
+    // both fields do not have streams
+    return true;
+  } else if (stream1 && stream2) {
+    // check if both fields have equivalent streams
+    return (
+      sameDirectiveArgument(stream1, stream2, 'initial_count') &&
+      sameDirectiveArgument(stream1, stream2, 'label')
+    );
+  }
+  // fields have a mix of stream and no stream
+  return false;
 }
 
 function sameValue(value1, value2) {
