@@ -1064,6 +1064,14 @@ function completeListValue(
     );
   }
 
+  // validation only allows equivalent streams on multiple fields, so it is
+  // safe to only check the first fieldNode for the stream directive
+  const stream = getDirectiveValues(
+    GraphQLStreamDirective,
+    fieldNodes[0],
+    exeContext.variableValues,
+  );
+
   // This is specified as a simple map, however we're optimizing the path
   // where the list contains no Promises by avoiding creating another Promise.
   const itemType = returnType.ofType;
@@ -1072,56 +1080,44 @@ function completeListValue(
     // No need to modify the info object containing the path,
     // since from here on it is not ever accessed by resolver functions.
     const fieldPath = addPath(path, index);
-    const initialFieldNodes = [];
-    for (const fieldNode of fieldNodes) {
-      const stream = getDirectiveValues(
-        GraphQLStreamDirective,
-        fieldNode,
-        exeContext.variableValues,
+    if (
+      exeContext.schema.__experimentalStream &&
+      stream &&
+      stream.if !== false &&
+      typeof stream.label === 'string' &&
+      typeof stream.initial_count === 'number' &&
+      index >= stream.initial_count
+    ) {
+      const patchErrors = [];
+      exeContext.dispatcher.add(
+        stream.label,
+        fieldPath,
+        () =>
+          completeValueCatchingError(
+            exeContext,
+            itemType,
+            fieldNodes,
+            info,
+            fieldPath,
+            item,
+            patchErrors,
+          ),
+        patchErrors,
       );
-      if (
-        exeContext.schema.__experimentalStream &&
-        stream &&
-        stream.if !== false &&
-        typeof stream.label === 'string' &&
-        typeof stream.initial_count === 'number' &&
-        index >= stream.initial_count
-      ) {
-        const patchErrors = [];
-        exeContext.dispatcher.add(
-          stream.label,
-          fieldPath,
-          () =>
-            completeValueCatchingError(
-              exeContext,
-              itemType,
-              [fieldNode],
-              info,
-              fieldPath,
-              item,
-              patchErrors,
-            ),
-          patchErrors,
-        );
-      } else {
-        initialFieldNodes.push(fieldNode);
-      }
-    }
-    if (!initialFieldNodes.length) {
-      return;
-    }
-    const completedItem = completeValueCatchingError(
-      exeContext,
-      itemType,
-      initialFieldNodes,
-      info,
-      fieldPath,
-      item,
-      errors,
-    );
+    } else {
+      const completedItem = completeValueCatchingError(
+        exeContext,
+        itemType,
+        fieldNodes,
+        info,
+        fieldPath,
+        item,
+        errors,
+      );
 
-    if (!containsPromise && isPromise(completedItem)) {
-      containsPromise = true;
+      if (!containsPromise && isPromise(completedItem)) {
+        containsPromise = true;
+      }
     }
 
     return completedItem;
