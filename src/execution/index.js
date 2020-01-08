@@ -15,4 +15,6 @@ export type {
   FormattedExecutionResult,
 } from './execute';
 
+export type { ExecutionPatchResult } from './dispatcher';
+
 export { getDirectiveValues } from './values';

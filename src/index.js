@@ -294,6 +294,7 @@ export type {
   ExecutionArgs,
   ExecutionResult,
   FormattedExecutionResult,
+  ExecutionPatchResult,
 } from './execution/index';
 
 export { subscribe, createSourceEventStream } from './subscription/index';
