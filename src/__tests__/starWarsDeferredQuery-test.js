@@ -36,6 +36,29 @@ describe('Star Wars Query Deferred Tests', () => {
         ],
       });
     });
+    it('Can disable @defer using if argument', async () => {
+      const query = `
+        query HeroNameQuery {
+          hero {
+            id
+            ...NameFragment @defer(if: false, label: "NameFragment")
+          }
+        }
+        fragment NameFragment on Droid {
+          id
+          name
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      expect(result).to.deep.equal({
+        data: {
+          hero: {
+            id: '2001',
+            name: 'R2-D2',
+          },
+        },
+      });
+    });
   });
 
   describe('Basic Queries', () => {
