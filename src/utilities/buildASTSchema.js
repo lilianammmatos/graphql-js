@@ -159,5 +159,7 @@ export function buildSchema(
     commentDescriptions: options?.commentDescriptions,
     assumeValidSDL: options?.assumeValidSDL,
     assumeValid: options?.assumeValid,
+    experimentalDefer: options?.experimentalDefer,
+    experimentalStream: options?.experimentalStream,
   });
 }
