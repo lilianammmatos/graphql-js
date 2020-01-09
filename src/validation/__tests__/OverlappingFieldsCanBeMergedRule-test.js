@@ -98,6 +98,117 @@ describe('Validate: Overlapping fields can be merged', () => {
     `);
   });
 
+  it('Same stream directives supported', () => {
+    // @stream is allowed on overlapping fields when they have the same label and
+    // initial count.
+    expectValid(`
+      fragment differentDirectivesWithDifferentAliases on Dog {
+        name @stream(label: "streamLabel", initial_count: 1)
+        name @stream(label: "streamLabel", initial_count: 1)
+      }
+    `);
+  });
+
+  it('different stream directive label', () => {
+    // @stream is allowed on overlapping fields when they have the same label and
+    // initial count.
+    expectErrors(`
+      fragment conflictingArgs on Dog {
+        name @stream(label: "streamLabel", initial_count: 1)
+        name @stream(label: "anotherLabel", initial_count: 1)
+      }
+    `).to.deep.equal([
+      {
+        message:
+          'Fields "name" conflict because they have differing stream directives. Use different aliases on the fields to fetch both if this was intentional.',
+        locations: [
+          { line: 3, column: 9 },
+          { line: 4, column: 9 },
+        ],
+      },
+    ]);
+  });
+
+  it('different stream directive initial_count', () => {
+    // @stream is allowed on overlapping fields when they have the same label and
+    // initial count.
+    expectErrors(`
+      fragment conflictingArgs on Dog {
+        name @stream(label: "streamLabel", initial_count: 1)
+        name @stream(label: "streamLabel", initial_count: 2)
+      }
+    `).to.deep.equal([
+      {
+        message:
+          'Fields "name" conflict because they have differing stream directives. Use different aliases on the fields to fetch both if this was intentional.',
+        locations: [
+          { line: 3, column: 9 },
+          { line: 4, column: 9 },
+        ],
+      },
+    ]);
+  });
+
+  it('different stream directive first missing args', () => {
+    // @stream is allowed on overlapping fields when they have the same label and
+    // initial count.
+    expectErrors(`
+      fragment conflictingArgs on Dog {
+        name @stream
+        name @stream(label: "streamLabel", initial_count: 1)
+      }
+    `).to.deep.equal([
+      {
+        message:
+          'Fields "name" conflict because they have differing stream directives. Use different aliases on the fields to fetch both if this was intentional.',
+        locations: [
+          { line: 3, column: 9 },
+          { line: 4, column: 9 },
+        ],
+      },
+    ]);
+  });
+
+  it('different stream directive second missing args', () => {
+    // @stream is allowed on overlapping fields when they have the same label and
+    // initial count.
+    expectErrors(`
+      fragment conflictingArgs on Dog {
+        name @stream(label: "streamLabel", initial_count: 1)
+        name @stream
+      }
+    `).to.deep.equal([
+      {
+        message:
+          'Fields "name" conflict because they have differing stream directives. Use different aliases on the fields to fetch both if this was intentional.',
+        locations: [
+          { line: 3, column: 9 },
+          { line: 4, column: 9 },
+        ],
+      },
+    ]);
+  });
+
+  it('different stream directive both missing args', () => {
+    // @stream is allowed on overlapping fields when they have the same label and
+    // initial count.
+    expectErrors(`
+      fragment conflictingArgs on Dog {
+        name @stream
+        name @stream
+      }
+    `).to.deep.equal([
+      {
+        message:
+          'Fields "name" conflict because they have differing stream directives. Use different aliases on the fields to fetch both if this was intentional.',
+        locations: [
+          { line: 3, column: 9 },
+          { line: 4, column: 9 },
+        ],
+      },
+    ]);
+  });
+
   it('Same aliases with different field targets', () => {
     expectErrors(`
       fragment sameAliasesWithDifferentFieldTargets on Dog {
