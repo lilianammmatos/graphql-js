@@ -15,23 +15,12 @@ export class Dispatcher {
     this._patches = [];
   }
 
-  execute(
-    fn: () => PromiseOrValue<mixed>,
-    errors: Array<GraphQLError>,
-  ): Promise<mixed> {
-    try {
-      const data = fn();
-      if (isPromise(data)) {
-        return data.then(undefined, error => {
-          errors.push(error);
-          return Promise.resolve(null);
-        });
-      }
-      return Promise.resolve(data);
-    } catch (error) {
-      errors.push(error);
-      return Promise.resolve(null);
+  execute(fn: () => PromiseOrValue<mixed>): Promise<mixed> {
+    const data = fn();
+    if (isPromise(data)) {
+      return data;
     }
+    return Promise.resolve(data);
   }
 
   add(
@@ -41,7 +30,7 @@ export class Dispatcher {
     errors: Array<GraphQLError>,
   ) {
     this._patches.push(
-      this.execute(fn, errors).then(data => ({
+      this.execute(fn).then(data => ({
         value: {
           data,
           path: pathToArray(path),
