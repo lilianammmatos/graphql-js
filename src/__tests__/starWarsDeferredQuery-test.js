@@ -80,6 +80,43 @@ describe('Star Wars Query Deferred Tests', () => {
         },
       });
     });
+    it('Can defer a fragment on the top level Query field', async () => {
+      const query = `
+        query HeroNameQuery {
+          ...QueryFragment @defer(label: "DeferQuery")
+        }
+        fragment QueryFragment on Query {
+          hero {
+            id
+          }
+        }
+      `;
+
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      const { patches: patchesIterable, ...initial } = result;
+      expect(initial).to.deep.equal({
+        data: {},
+      });
+
+      const patches = [];
+
+      if (patchesIterable) {
+        await forAwaitEach(patchesIterable, patch => {
+          patches.push(patch);
+        });
+      }
+
+      expect(patches).to.have.lengthOf(1);
+      expect(patches[0]).to.deep.equal({
+        label: 'DeferQuery',
+        path: [],
+        data: {
+          hero: {
+            id: '2001',
+          },
+        },
+      });
+    });
   });
 
   // TODO
