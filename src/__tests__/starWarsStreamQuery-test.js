@@ -214,6 +214,8 @@ describe('Star Wars Query Stream Tests', () => {
         },
       });
       const patches = [];
+
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);
@@ -268,6 +270,8 @@ describe('Star Wars Query Stream Tests', () => {
         },
       });
       const patches = [];
+
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);
@@ -330,6 +334,7 @@ describe('Star Wars Query Stream Tests', () => {
 
       const patches = [];
 
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);
@@ -370,6 +375,7 @@ describe('Star Wars Query Stream Tests', () => {
 
       const patches = [];
 
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);

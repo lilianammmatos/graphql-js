@@ -87,6 +87,7 @@ describe('Star Wars Query Deferred Tests', () => {
 
       const patches = [];
 
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);
@@ -123,6 +124,7 @@ describe('Star Wars Query Deferred Tests', () => {
 
       const patches = [];
 
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);
@@ -177,6 +179,7 @@ describe('Star Wars Query Deferred Tests', () => {
 
       const patches = [];
 
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);
@@ -235,6 +238,7 @@ describe('Star Wars Query Deferred Tests', () => {
 
       const patches = [];
 
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);
@@ -325,6 +329,7 @@ describe('Star Wars Query Deferred Tests', () => {
 
       const patches = [];
 
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);
@@ -410,6 +415,7 @@ describe('Star Wars Query Deferred Tests', () => {
       });
       const patches = [];
 
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);
@@ -459,6 +465,8 @@ describe('Star Wars Query Deferred Tests', () => {
         },
       });
       const patches = [];
+
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);
@@ -543,6 +551,8 @@ describe('Star Wars Query Deferred Tests', () => {
       });
 
       const patches = [];
+
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);
@@ -587,6 +597,8 @@ describe('Star Wars Query Deferred Tests', () => {
       });
 
       const patches = [];
+
+      /* istanbul ignore else */
       if (patchesIterable) {
         await forAwaitEach(patchesIterable, patch => {
           patches.push(patch);
