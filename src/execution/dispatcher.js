@@ -1,6 +1,6 @@
 // @flow strict
 
-import { $$asyncIterator } from 'iterall';
+import { SYMBOL_ASYNC_ITERATOR } from '../polyfills/symbols';
 
 import { type Path, pathToArray } from '../jsutils/Path';
 import { type PromiseOrValue } from '../jsutils/PromiseOrValue';
@@ -72,7 +72,7 @@ export class Dispatcher {
       next() {
         return getNext(results);
       },
-      [$$asyncIterator]() {
+      [SYMBOL_ASYNC_ITERATOR]() {
         return this;
       },
     }: any);
