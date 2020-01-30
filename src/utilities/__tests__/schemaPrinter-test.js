@@ -970,12 +970,6 @@ describe('Type System Printer', () => {
         deprecationReason: String
       }
 
-      # Marks an element of a GraphQL schema as no longer supported.
-      directive @deprecated(
-        # Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted using the Markdown syntax, as specified by [CommonMark](https://commonmark.org/).
-        reason: String = "No longer supported"
-      ) on FIELD_DEFINITION | ENUM_VALUE
-
       # A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.
       #
       # In some cases, you need to provide options to alter GraphQL's execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor.

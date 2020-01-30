@@ -174,6 +174,16 @@ export class GraphQLSchema {
     // Provide specified directives (e.g. @include and @skip) by default.
     this._directives = config.directives ?? specifiedDirectives;
 
+    if (config.experimentalDefer === true) {
+      this.__experimentalDefer = true;
+      this._directives = [].concat(this._directives, [GraphQLDeferDirective]);
+    }
+
+    if (config.experimentalStream === true) {
+      this.__experimentalStream = true;
+      this._directives = [].concat(this._directives, [GraphQLStreamDirective]);
+    }
+
     // To preserve order of user-provided types, we add first to add them to
     // the set of "collected" types, so `collectReferencedTypes` ignore them.
     const allReferencedTypes: Set<GraphQLNamedType> = new Set(config.types);
@@ -184,16 +194,6 @@ export class GraphQLSchema {
         allReferencedTypes.delete(type);
         collectReferencedTypes(type, allReferencedTypes);
       }
-    }
-
-    if (config.experimentalDefer) {
-      this.__experimentalDefer = true;
-      this._directives = [].concat(this._directives, [GraphQLDeferDirective]);
-    }
-
-    if (config.experimentalStream) {
-      this.__experimentalStream = true;
-      this._directives = [].concat(this._directives, [GraphQLStreamDirective]);
     }
 
     if (this._queryType != null) {

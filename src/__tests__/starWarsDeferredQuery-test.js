@@ -1,6 +1,5 @@
 // @flow strict
 
-import { forAwaitEach } from 'iterall';
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
 
@@ -89,9 +88,9 @@ describe('Star Wars Query Deferred Tests', () => {
 
       /* istanbul ignore else */
       if (patchesIterable) {
-        await forAwaitEach(patchesIterable, patch => {
+        for await (const patch of patchesIterable) {
           patches.push(patch);
-        });
+        }
       }
 
       expect(patches).to.have.lengthOf(1);
@@ -126,9 +125,9 @@ describe('Star Wars Query Deferred Tests', () => {
 
       /* istanbul ignore else */
       if (patchesIterable) {
-        await forAwaitEach(patchesIterable, patch => {
+        for await (const patch of patchesIterable) {
           patches.push(patch);
-        });
+        }
       }
 
       expect(patches).to.have.lengthOf(1);
@@ -181,9 +180,9 @@ describe('Star Wars Query Deferred Tests', () => {
 
       /* istanbul ignore else */
       if (patchesIterable) {
-        await forAwaitEach(patchesIterable, patch => {
+        for await (const patch of patchesIterable) {
           patches.push(patch);
-        });
+        }
       }
 
       expect(patches).to.have.lengthOf(2);
@@ -240,9 +239,9 @@ describe('Star Wars Query Deferred Tests', () => {
 
       /* istanbul ignore else */
       if (patchesIterable) {
-        await forAwaitEach(patchesIterable, patch => {
+        for await (const patch of patchesIterable) {
           patches.push(patch);
-        });
+        }
       }
       expect(patches).to.have.lengthOf(1);
       expect(patches[0]).to.deep.equal({
@@ -331,9 +330,9 @@ describe('Star Wars Query Deferred Tests', () => {
 
       /* istanbul ignore else */
       if (patchesIterable) {
-        await forAwaitEach(patchesIterable, patch => {
+        for await (const patch of patchesIterable) {
           patches.push(patch);
-        });
+        }
       }
 
       expect(patches).to.have.lengthOf(2);
@@ -417,9 +416,9 @@ describe('Star Wars Query Deferred Tests', () => {
 
       /* istanbul ignore else */
       if (patchesIterable) {
-        await forAwaitEach(patchesIterable, patch => {
+        for await (const patch of patchesIterable) {
           patches.push(patch);
-        });
+        }
       }
       expect(patches).to.have.lengthOf(1);
       expect(patches[0]).to.deep.equal({
@@ -468,9 +467,9 @@ describe('Star Wars Query Deferred Tests', () => {
 
       /* istanbul ignore else */
       if (patchesIterable) {
-        await forAwaitEach(patchesIterable, patch => {
+        for await (const patch of patchesIterable) {
           patches.push(patch);
-        });
+        }
       }
       expect(patches).to.have.lengthOf(1);
       expect(patches[0]).to.deep.equal({
@@ -554,9 +553,9 @@ describe('Star Wars Query Deferred Tests', () => {
 
       /* istanbul ignore else */
       if (patchesIterable) {
-        await forAwaitEach(patchesIterable, patch => {
+        for await (const patch of patchesIterable) {
           patches.push(patch);
-        });
+        }
       }
       expect(patches).to.have.lengthOf(1);
       expect(patches[0]).to.deep.equal({
@@ -600,9 +599,9 @@ describe('Star Wars Query Deferred Tests', () => {
 
       /* istanbul ignore else */
       if (patchesIterable) {
-        await forAwaitEach(patchesIterable, patch => {
+        for await (const patch of patchesIterable) {
           patches.push(patch);
-        });
+        }
       }
       expect(patches).to.have.lengthOf(1);
       expect(patches[0]).to.deep.equal({
