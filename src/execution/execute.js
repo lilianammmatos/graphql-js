@@ -67,6 +67,8 @@ import {
 import { typeFromAST } from '../utilities/typeFromAST';
 import { getOperationRootType } from '../utilities/getOperationRootType';
 
+import { Dispatcher, type ExecutionPatchResult } from './dispatcher';
+
 import {
   getVariableValues,
   getArgumentValues,
@@ -574,9 +576,10 @@ export function collectFields(
           continue;
         }
 
-        const patchLabel = exeContext.schema.__experimentalDefer
-          ? getDeferredNodeLabel(exeContext, selection)
-          : '';
+        const patchLabel =
+          exeContext.schema.__experimentalDefer === true
+            ? getDeferredNodeLabel(exeContext, selection)
+            : '';
 
         if (patchLabel) {
           const { fields: patchFields } = collectFields(
@@ -610,9 +613,10 @@ export function collectFields(
           continue;
         }
 
-        const patchLabel = exeContext.schema.__experimentalDefer
-          ? getDeferredNodeLabel(exeContext, selection)
-          : '';
+        const patchLabel =
+          exeContext.schema.__experimentalDefer === true
+            ? getDeferredNodeLabel(exeContext, selection)
+            : '';
 
         if (
           visitedFragmentNames[fragName] &&
@@ -1110,7 +1114,7 @@ function completeListValue(
     // since from here on it is not ever accessed by resolver functions.
     const fieldPath = addPath(path, index, undefined);
     if (
-      exeContext.schema.__experimentalStream &&
+      exeContext.schema.__experimentalStream === true &&
       stream &&
       stream.if !== false &&
       typeof stream.label === 'string' &&
@@ -1147,11 +1151,10 @@ function completeListValue(
       if (!containsPromise && isPromise(completedItem)) {
         containsPromise = true;
       }
+
+      return completedItem;
     }
-
-    return completedItem;
-  });
-
+  }).filter((val) => val !== undefined);
   return containsPromise ? Promise.all(completedResults) : completedResults;
 }
 

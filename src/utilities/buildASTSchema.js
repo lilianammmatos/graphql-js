@@ -114,7 +114,7 @@ export function buildASTSchema(
 
   if (
     options &&
-    options.experimentalDefer &&
+    options.experimentalDefer === true &&
     !directives.some(directive => directive.name === 'defer')
   ) {
     directives.push(GraphQLDeferDirective);
@@ -122,7 +122,7 @@ export function buildASTSchema(
 
   if (
     options &&
-    options.experimentalStream &&
+    options.experimentalStream === true &&
     !directives.some(directive => directive.name === 'stream')
   ) {
     directives.push(GraphQLStreamDirective);
