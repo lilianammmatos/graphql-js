@@ -248,13 +248,14 @@ function buildResponse(
   if (isPromise(data)) {
     return data.then(resolved => buildResponse(exeContext, resolved));
   }
-  const patches = exeContext.dispatcher.get();
   const response =
     exeContext.errors.length === 0
       ? { data }
       : { errors: exeContext.errors, data };
 
-  return patches ? { ...response, patches } : response;
+  const { patches, initialResponse } = exeContext.dispatcher.get(response);
+
+  return patches ? { ...initialResponse, patches } : initialResponse;
 }
 
 /**

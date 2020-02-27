@@ -225,6 +225,11 @@ const droidType = new GraphQLObjectType({
     name: {
       type: GraphQLString,
       description: 'The name of the droid.',
+      resolve: droid => {
+        return new Promise(resolve => {
+          resolve(droid.name);
+        });
+      },
     },
     friends: {
       type: GraphQLList(characterInterface),

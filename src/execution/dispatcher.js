@@ -13,14 +13,51 @@ export class Dispatcher {
 
   constructor() {
     this._patches = [];
+    this._data = [];
   }
 
-  execute(fn: () => PromiseOrValue<mixed>): Promise<mixed> {
-    const data = fn();
-    if (isPromise(data)) {
-      return data;
+  static apply(
+    prevData: any,
+    currPath: $ReadOnlyArray<string | number>,
+    currData: any,
+  ) {
+    const [nextPath, ...rest] = currPath;
+    let nextData = currData;
+    let nextPrevData;
+
+    if (rest && rest.length) {
+      nextPrevData =
+        prevData && prevData[nextPath] ? prevData[nextPath] : prevData;
+      nextData = Dispatcher.apply(nextPrevData, rest, currData);
     }
-    return Promise.resolve(data);
+
+    if (Array.isArray(prevData)) {
+      prevData[nextPath] = {
+        ...prevData[nextPath],
+        ...nextData,
+      };
+      return prevData;
+    }
+
+    return {
+      ...prevData,
+      [nextPath]: nextData,
+    };
+  }
+
+  static format(data, label, path, errors) {
+    if (isPromise(data)) {
+      return data.then(val => Dispatcher.format(val, label, path, errors));
+    }
+    return {
+      value: {
+        data,
+        path: pathToArray(path),
+        label,
+        ...(errors && errors.length > 0 ? { errors } : {}),
+      },
+      done: false,
+    };
   }
 
   add(
@@ -29,20 +66,39 @@ export class Dispatcher {
     fn: () => PromiseOrValue<mixed>,
     errors: Array<GraphQLError>,
   ) {
-    this._patches.push(
-      this.execute(fn).then(data => ({
-        value: {
-          data,
-          path: pathToArray(path),
-          label,
-          ...(errors && errors.length > 0 ? { errors } : {}),
-        },
-        done: false,
-      })),
-    );
+    const data = fn();
+    if (isPromise(data)) {
+      this._patches.push(
+        data.then(value => Dispatcher.format(data, label, path, errors)),
+      );
+    } else {
+      this._data.push(Dispatcher.format(data, label, path, errors));
+    }
   }
 
-  get(): AsyncIterable<ExecutionPatchResult> | null {
+  getInitialResponse(response) {
+    if (this._data.length === 0) {
+      return response;
+    }
+
+    const ret = this._data.reduce((acc, { value }, index) => {
+      const { data: currData, path, errors: currErrors } = value;
+      const { data: prevData, errors: prevErrors } = acc;
+      const data = Dispatcher.apply(prevData, path, currData);
+      let errors = [];
+      if (prevErrors) {
+        errors = [errors, ...prevErrors];
+      }
+      if (currErrors) {
+        errors = [errors, ...currErrors];
+      }
+
+      return errors.length === 0 ? { data } : { data, errors };
+    }, response);
+    return response;
+  }
+
+  getPatches(): AsyncIterable<ExecutionPatchResult> | null {
     if (this._patches.length === 0) {
       return null;
     }
@@ -76,6 +132,13 @@ export class Dispatcher {
         return this;
       },
     }: any);
+  }
+
+  get(response): AsyncIterable<ExecutionPatchResult> | null {
+    return {
+      patches: this.getPatches(),
+      initialResponse: this.getInitialResponse(response),
+    };
   }
 }
 

@@ -61,7 +61,7 @@ describe('Star Wars Query Deferred Tests', () => {
   });
 
   describe('Basic Queries', () => {
-    it('Can @defer fragments containing scalar types', async () => {
+    it.only('Can @defer fragments containing scalar types', async () => {
       const query = `
         query HeroNameQuery {
           hero {
