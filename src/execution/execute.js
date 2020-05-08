@@ -244,7 +244,7 @@ function buildResponse(
   data: PromiseOrValue<ObjMap<mixed> | null>,
 ): PromiseOrValue<ExecutionResult> {
   if (isPromise(data)) {
-    return data.then(resolved => buildResponse(exeContext, resolved));
+    return data.then((resolved) => buildResponse(exeContext, resolved));
   }
   const patches = exeContext.dispatcher.get();
   const response =
@@ -411,7 +411,7 @@ function executeOperation(
     }
 
     if (isPromise(result)) {
-      return result.then(undefined, error => {
+      return result.then(undefined, (error) => {
         exeContext.errors.push(error);
         return Promise.resolve(null);
       });
@@ -450,7 +450,7 @@ function executeFieldsSerially(
         return results;
       }
       if (isPromise(result)) {
-        return result.then(resolvedResult => {
+        return result.then((resolvedResult) => {
           results[responseName] = resolvedResult;
           return results;
         });
@@ -854,7 +854,7 @@ function completeValueCatchingError(
   try {
     let completed;
     if (isPromise(result)) {
-      completed = result.then(resolved =>
+      completed = result.then((resolved) =>
         completeValue(
           exeContext,
           returnType,
@@ -880,7 +880,7 @@ function completeValueCatchingError(
     if (isPromise(completed)) {
       // Note: we don't rely on a `catch` method, but we do expect "thenable"
       // to take a second callback for the error case.
-      return completed.then(undefined, error =>
+      return completed.then(undefined, (error) =>
         handleFieldError(
           error,
           fieldNodes,
@@ -1125,7 +1125,7 @@ function completeListValue(
 
       return completedItem;
     }
-  }).filter(val => val !== undefined);
+  }).filter((val) => val !== undefined);
   return containsPromise ? Promise.all(completedResults) : completedResults;
 }
 
@@ -1162,7 +1162,7 @@ function completeAbstractValue(
   const runtimeType = resolveTypeFn(result, contextValue, info, returnType);
 
   if (isPromise(runtimeType)) {
-    return runtimeType.then(resolvedRuntimeType =>
+    return runtimeType.then((resolvedRuntimeType) =>
       completeObjectValue(
         exeContext,
         ensureValidRuntimeType(
@@ -1251,7 +1251,7 @@ function completeObjectValue(
     const isTypeOf = returnType.isTypeOf(result, exeContext.contextValue, info);
 
     if (isPromise(isTypeOf)) {
-      return isTypeOf.then(resolvedIsTypeOf => {
+      return isTypeOf.then((resolvedIsTypeOf) => {
         if (!resolvedIsTypeOf) {
           throw invalidReturnTypeError(returnType, result, fieldNodes);
         }
@@ -1382,7 +1382,7 @@ function _collectSubfields(
  * Otherwise, test each possible type for the abstract type by calling
  * isTypeOf for the object being coerced, returning the first type that matches.
  */
-export const defaultTypeResolver: GraphQLTypeResolver<mixed, mixed> = function(
+export const defaultTypeResolver: GraphQLTypeResolver<mixed, mixed> = function (
   value,
   contextValue,
   info,
@@ -1412,7 +1412,7 @@ export const defaultTypeResolver: GraphQLTypeResolver<mixed, mixed> = function(
   }
 
   if (promisedIsTypeOfResults.length) {
-    return Promise.all(promisedIsTypeOfResults).then(isTypeOfResults => {
+    return Promise.all(promisedIsTypeOfResults).then((isTypeOfResults) => {
       for (let i = 0; i < isTypeOfResults.length; i++) {
         if (isTypeOfResults[i]) {
           return possibleTypes[i];
@@ -1431,7 +1431,7 @@ export const defaultTypeResolver: GraphQLTypeResolver<mixed, mixed> = function(
 export const defaultFieldResolver: GraphQLFieldResolver<
   mixed,
   mixed,
-> = function(source: any, args, contextValue, info) {
+> = function (source: any, args, contextValue, info) {
   // ensure source is a value for which property access is acceptable.
   if (isObjectLike(source) || typeof source === 'function') {
     const property = source[info.fieldName];
