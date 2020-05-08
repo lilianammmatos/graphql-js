@@ -82,6 +82,7 @@ describe('Star Wars Query Deferred Tests', () => {
             id: '2001',
           },
         },
+        isFinal: false,
       });
 
       const patches = [];
@@ -101,6 +102,7 @@ describe('Star Wars Query Deferred Tests', () => {
           id: '2001',
           name: 'R2-D2',
         },
+        isFinal: true,
       });
     });
     it('Can defer a fragment on the top level Query field', async () => {
@@ -119,6 +121,7 @@ describe('Star Wars Query Deferred Tests', () => {
       const { patches: patchesIterable, ...initial } = result;
       expect(initial).to.deep.equal({
         data: {},
+        isFinal: false,
       });
 
       const patches = [];
@@ -139,6 +142,7 @@ describe('Star Wars Query Deferred Tests', () => {
             id: '2001',
           },
         },
+        isFinal: true,
       });
     });
   });
@@ -174,6 +178,7 @@ describe('Star Wars Query Deferred Tests', () => {
             id: '2001',
           },
         },
+        isFinal: false,
       });
 
       const patches = [];
@@ -193,6 +198,7 @@ describe('Star Wars Query Deferred Tests', () => {
           appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
           primaryFunction: 'Astromech',
         },
+        isFinal: false,
       });
       expect(patches[1]).to.deep.equal({
         label: 'DeferDroid',
@@ -201,6 +207,7 @@ describe('Star Wars Query Deferred Tests', () => {
           id: '2001',
           name: 'R2-D2',
         },
+        isFinal: true,
       });
     });
   });
@@ -233,6 +240,7 @@ describe('Star Wars Query Deferred Tests', () => {
             id: '1003',
           },
         },
+        isFinal: false,
       });
 
       const patches = [];
@@ -251,6 +259,7 @@ describe('Star Wars Query Deferred Tests', () => {
           name: 'Leia Organa',
           homePlanet: 'Alderaan',
         },
+        isFinal: true,
       });
     });
   });
@@ -324,6 +333,7 @@ describe('Star Wars Query Deferred Tests', () => {
             ],
           },
         },
+        isFinal: false,
       });
 
       const patches = [];
@@ -359,6 +369,7 @@ describe('Star Wars Query Deferred Tests', () => {
             },
           ],
         },
+        isFinal: false,
       });
 
       expect(patches[1]).to.deep.equal({
@@ -381,6 +392,7 @@ describe('Star Wars Query Deferred Tests', () => {
             },
           ],
         },
+        isFinal: true,
       });
     });
   });
@@ -411,6 +423,7 @@ describe('Star Wars Query Deferred Tests', () => {
             id: '2001',
           },
         },
+        isFinal: false,
       });
       const patches = [];
 
@@ -435,6 +448,7 @@ describe('Star Wars Query Deferred Tests', () => {
             path: ['hero', 'secretBackstory'],
           },
         ],
+        isFinal: true,
       });
     });
 
@@ -462,6 +476,7 @@ describe('Star Wars Query Deferred Tests', () => {
             id: '2001',
           },
         },
+        isFinal: false,
       });
       const patches = [];
 
@@ -524,6 +539,7 @@ describe('Star Wars Query Deferred Tests', () => {
             path: ['hero', 'friends', 2, 'secretBackstory'],
           },
         ],
+        isFinal: true,
       });
     });
 
@@ -547,6 +563,7 @@ describe('Star Wars Query Deferred Tests', () => {
             name: 'R2-D2',
           },
         },
+        isFinal: false,
       });
 
       const patches = [];
@@ -571,6 +588,7 @@ describe('Star Wars Query Deferred Tests', () => {
           },
         ],
         path: ['mainHero'],
+        isFinal: true,
       });
     });
     it('Correctly reports async error on accessing secretFiends', async () => {
@@ -593,6 +611,7 @@ describe('Star Wars Query Deferred Tests', () => {
             name: 'Leia Organa',
           },
         },
+        isFinal: false,
       });
 
       const patches = [];
@@ -617,6 +636,7 @@ describe('Star Wars Query Deferred Tests', () => {
             path: ['leia', 'secretFriend'],
           },
         ],
+        isFinal: true,
       });
     });
   });

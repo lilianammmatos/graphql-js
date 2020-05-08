@@ -126,6 +126,7 @@ export type ExecutionResult = {|
   data?: ObjMap<mixed> | null,
   extensions?: ObjMap<mixed>,
   patches?: AsyncIterable<ExecutionPatchResult>,
+  isFinal?: boolean,
 |};
 
 export type FormattedExecutionResult = {|
@@ -281,7 +282,7 @@ function buildResponse(
       ? { data }
       : { errors: exeContext.errors, data };
 
-  return patches ? { ...response, patches } : response;
+  return patches ? { ...response, patches, isFinal: false } : response;
 }
 
 /**
