@@ -181,7 +181,7 @@ const humanType = new GraphQLObjectType({
       type: GraphQLString,
       description: 'A friend of the human whose identity should remain hidden.',
       resolve() {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
           setTimeout(() => {
             resolve();
           }, 10);

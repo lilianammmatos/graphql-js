@@ -30,7 +30,7 @@ export class Dispatcher {
     errors: Array<GraphQLError>,
   ) {
     this._patches.push(
-      this.execute(fn).then(data => ({
+      this.execute(fn).then((data) => ({
         value: {
           data,
           path: pathToArray(path),
@@ -49,16 +49,16 @@ export class Dispatcher {
     const results = this._patches;
 
     function race(promises) {
-      return new Promise(resolve => {
+      return new Promise((resolve) => {
         promises.forEach((promise, index) => {
-          promise.then(result => {
+          promise.then((result) => {
             resolve({ result, index });
           });
         });
       });
     }
 
-    const getNext = promises => {
+    const getNext = (promises) => {
       if (promises.length === 0) {
         return Promise.resolve({ value: undefined, done: true });
       }
