@@ -210,7 +210,7 @@ export const GraphQLStreamDirective = new GraphQLDirective({
       description: 'Unique name',
     },
     // eslint-disable-next-line camelcase
-    initial_count: {
+    initialCount: {
       type: GraphQLNonNull(GraphQLInt),
       description: 'Number of items to return immediately',
     },

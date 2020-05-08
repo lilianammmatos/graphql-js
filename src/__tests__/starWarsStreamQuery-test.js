@@ -16,7 +16,7 @@ describe('Star Wars Query Stream Tests', () => {
       const query = `
         query HeroFriendsQuery {
           hero {
-            friends @stream(initial_count: 0, label: "HeroFriends") {
+            friends @stream(initialCount: 0, label: "HeroFriends") {
               id
               name
             }
@@ -37,7 +37,7 @@ describe('Star Wars Query Stream Tests', () => {
       const query = `
         query HeroFriendsQuery {
           hero {
-            friends @stream(initial_count: 0, label: "HeroFriends", if: false) {
+            friends @stream(initialCount: 0, label: "HeroFriends", if: false) {
               id
               name
             }
@@ -80,7 +80,7 @@ describe('Star Wars Query Stream Tests', () => {
           }
         }
         fragment FriendsName on Character {
-          friends @stream(label: "nameLabel", initial_count: 1) {
+          friends @stream(label: "nameLabel", initialCount: 1) {
             name
           }
         }
@@ -105,18 +105,18 @@ describe('Star Wars Query Stream Tests', () => {
         ],
       });
     });
-    it('Does not allow multiple @stream with different initial_count', async () => {
+    it('Does not allow multiple @stream with different initialCount', async () => {
       const query = `
         query HeroFriendsQuery {
           hero {
-            friends @stream(label: "sameLabel", initial_count: 3) {
+            friends @stream(label: "sameLabel", initialCount: 3) {
               id
             }
             ...FriendsName
           }
         }
         fragment FriendsName on Character {
-          friends @stream(label: "sameLabel", initial_count: 1) {
+          friends @stream(label: "sameLabel", initialCount: 1) {
             name
           }
         }
@@ -145,14 +145,14 @@ describe('Star Wars Query Stream Tests', () => {
       const query = `
         query HeroFriendsQuery {
           hero {
-            friends @stream(label: "idLabel", initial_count: 1) {
+            friends @stream(label: "idLabel", initialCount: 1) {
               id
             }
             ...FriendsName
           }
         }
         fragment FriendsName on Character {
-          friends @stream(label: "nameLabel", initial_count: 1) {
+          friends @stream(label: "nameLabel", initialCount: 1) {
             name
           }
         }
@@ -177,18 +177,18 @@ describe('Star Wars Query Stream Tests', () => {
         ],
       });
     });
-    it('Does allow multiple @stream with same label and initial_count', async () => {
+    it('Does allow multiple @stream with same label and initialCount', async () => {
       const query = `
       query HeroFriendsQuery {
         hero {
-          friends @stream(label: "sameLabel", initial_count: 2) {
+          friends @stream(label: "sameLabel", initialCount: 2) {
             id
           }
           ...FriendsName
         }
       }
       fragment FriendsName on Character {
-        friends @stream(label: "sameLabel", initial_count: 2) {
+        friends @stream(label: "sameLabel", initialCount: 2) {
           name
         }
       }
@@ -232,18 +232,18 @@ describe('Star Wars Query Stream Tests', () => {
         isFinal: true,
       });
     });
-    it('Does allow multiple @stream with different label and initial_count when fields are aliased', async () => {
+    it('Does allow multiple @stream with different label and initialCount when fields are aliased', async () => {
       const query = `
       query HeroFriendsQuery {
         hero {
-          friends @stream(label: "idLabel", initial_count: 2) {
+          friends @stream(label: "idLabel", initialCount: 2) {
             id
           }
           ...FriendsName
         }
       }
       fragment FriendsName on Character {
-        namedFriends: friends @stream(label: "nameLabel", initial_count: 1) {
+        namedFriends: friends @stream(label: "nameLabel", initialCount: 1) {
           name
         }
       }
@@ -311,7 +311,7 @@ describe('Star Wars Query Stream Tests', () => {
       const query = `
         query HeroFriendsQuery {
           hero {
-            friends @stream(initial_count: 2, label: "HeroFriends") {
+            friends @stream(initialCount: 2, label: "HeroFriends") {
               id
               name
             }
@@ -362,7 +362,7 @@ describe('Star Wars Query Stream Tests', () => {
       const query = `
         query HeroFriendsQuery {
           hero {
-            friends @stream(initial_count: 0, label: "HeroFriends") {
+            friends @stream(initialCount: 0, label: "HeroFriends") {
               ... on Human {
                 secretFriend
               }

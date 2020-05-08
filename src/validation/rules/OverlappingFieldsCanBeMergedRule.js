@@ -690,7 +690,7 @@ function sameStreams(
   } else if (stream1 && stream2) {
     // check if both fields have equivalent streams
     return (
-      sameDirectiveArgument(stream1, stream2, 'initial_count') &&
+      sameDirectiveArgument(stream1, stream2, 'initialCount') &&
       sameDirectiveArgument(stream1, stream2, 'label')
     );
   }
