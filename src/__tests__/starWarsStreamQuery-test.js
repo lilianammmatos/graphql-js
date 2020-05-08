@@ -211,6 +211,7 @@ describe('Star Wars Query Stream Tests', () => {
             ],
           },
         },
+        isFinal: false,
       });
       const patches = [];
 
@@ -228,6 +229,7 @@ describe('Star Wars Query Stream Tests', () => {
         },
         path: ['hero', 'friends', 2],
         label: 'sameLabel',
+        isFinal: true,
       });
     });
     it('Does allow multiple @stream with different label and initial_count when fields are aliased', async () => {
@@ -267,6 +269,7 @@ describe('Star Wars Query Stream Tests', () => {
             ],
           },
         },
+        isFinal: false,
       });
       const patches = [];
 
@@ -283,6 +286,7 @@ describe('Star Wars Query Stream Tests', () => {
         },
         path: ['hero', 'friends', 2],
         label: 'idLabel',
+        isFinal: false,
       });
       expect(patches[1]).to.deep.equal({
         data: {
@@ -290,6 +294,7 @@ describe('Star Wars Query Stream Tests', () => {
         },
         path: ['hero', 'namedFriends', 1],
         label: 'nameLabel',
+        isFinal: false,
       });
       expect(patches[2]).to.deep.equal({
         data: {
@@ -297,6 +302,7 @@ describe('Star Wars Query Stream Tests', () => {
         },
         path: ['hero', 'namedFriends', 2],
         label: 'nameLabel',
+        isFinal: true,
       });
     });
   });
@@ -329,6 +335,7 @@ describe('Star Wars Query Stream Tests', () => {
             ],
           },
         },
+        isFinal: false,
       });
 
       const patches = [];
@@ -348,6 +355,7 @@ describe('Star Wars Query Stream Tests', () => {
           id: '1003',
           name: 'Leia Organa',
         },
+        isFinal: true,
       });
     });
     it('Errors are added to the correct patch', async () => {
@@ -370,6 +378,7 @@ describe('Star Wars Query Stream Tests', () => {
             friends: [],
           },
         },
+        isFinal: false,
       });
 
       const patches = [];
@@ -400,6 +409,7 @@ describe('Star Wars Query Stream Tests', () => {
             path: ['hero', 'friends', 0, 'secretFriend'],
           },
         ],
+        isFinal: false,
       });
       expect(patches[1]).to.deep.equal({
         data: {
@@ -419,6 +429,7 @@ describe('Star Wars Query Stream Tests', () => {
             path: ['hero', 'friends', 1, 'secretFriend'],
           },
         ],
+        isFinal: false,
       });
       expect(patches[2]).to.deep.equal({
         data: {
@@ -438,6 +449,7 @@ describe('Star Wars Query Stream Tests', () => {
             path: ['hero', 'friends', 2, 'secretFriend'],
           },
         ],
+        isFinal: true,
       });
     });
   });

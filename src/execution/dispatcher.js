@@ -49,10 +49,20 @@ export class Dispatcher {
     const results = this._patches;
 
     function race(promises) {
+      const isFinal = promises.length === 1;
       return new Promise((resolve) => {
         promises.forEach((promise, index) => {
           promise.then((result) => {
-            resolve({ result, index });
+            resolve({
+              result: {
+                ...result,
+                value: {
+                  ...result.value,
+                  isFinal,
+                },
+              },
+              index,
+            });
           });
         });
       });
@@ -84,5 +94,6 @@ export type ExecutionPatchResult = {
   data?: mixed | null,
   path: $ReadOnlyArray<string | number>,
   label: string,
+  isFinal?: boolean,
   ...
 };
