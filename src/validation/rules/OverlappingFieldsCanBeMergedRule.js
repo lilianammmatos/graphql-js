@@ -656,14 +656,14 @@ function sameDirectiveArgument(
 ): boolean {
   /* istanbul ignore next (See https://github.com/graphql/graphql-js/issues/2203) */
   const args1 = directive1.arguments || [];
-  const arg1 = find(args1, argument => argument.name.value === argumentName);
+  const arg1 = find(args1, (argument) => argument.name.value === argumentName);
   if (!arg1) {
     return false;
   }
 
   /* istanbul ignore next (See https://github.com/graphql/graphql-js/issues/2203) */
   const args2 = directive2.arguments || [];
-  const arg2 = find(args2, argument => argument.name.value === argumentName);
+  const arg2 = find(args2, (argument) => argument.name.value === argumentName);
   if (!arg2) {
     return false;
   }
@@ -673,7 +673,7 @@ function sameDirectiveArgument(
 function getStreamDirective(
   directives: $ReadOnlyArray<DirectiveNode>,
 ): ?DirectiveNode {
-  return find(directives, directive => directive.name.value === 'stream');
+  return find(directives, (directive) => directive.name.value === 'stream');
 }
 
 function sameStreams(

@@ -105,18 +105,18 @@ export function buildASTSchema(
 
   const { directives } = config;
   // If specified directives were not explicitly declared, add them.
-  if (!directives.some(directive => directive.name === 'skip')) {
+  if (!directives.some((directive) => directive.name === 'skip')) {
     directives.push(GraphQLSkipDirective);
   }
 
-  if (!directives.some(directive => directive.name === 'include')) {
+  if (!directives.some((directive) => directive.name === 'include')) {
     directives.push(GraphQLIncludeDirective);
   }
 
   if (
     options &&
     options.experimentalDefer === true &&
-    !directives.some(directive => directive.name === 'defer')
+    !directives.some((directive) => directive.name === 'defer')
   ) {
     directives.push(GraphQLDeferDirective);
   }
@@ -124,16 +124,16 @@ export function buildASTSchema(
   if (
     options &&
     options.experimentalStream === true &&
-    !directives.some(directive => directive.name === 'stream')
+    !directives.some((directive) => directive.name === 'stream')
   ) {
     directives.push(GraphQLStreamDirective);
   }
 
-  if (!directives.some(directive => directive.name === 'deprecated')) {
+  if (!directives.some((directive) => directive.name === 'deprecated')) {
     directives.push(GraphQLDeprecatedDirective);
   }
 
-  if (!directives.some(directive => directive.name === 'specifiedBy')) {
+  if (!directives.some((directive) => directive.name === 'specifiedBy')) {
     directives.push(GraphQLSpecifiedByDirective);
   }
 
