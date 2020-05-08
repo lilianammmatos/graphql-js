@@ -119,6 +119,7 @@ export type ExecutionResult = {|
   errors?: $ReadOnlyArray<GraphQLError>,
   data?: ObjMap<mixed> | null,
   patches?: AsyncIterable<ExecutionPatchResult>,
+  isFinal?: boolean,
 |};
 
 export type ExecutionArgs = {|
@@ -252,7 +253,7 @@ function buildResponse(
       ? { data }
       : { errors: exeContext.errors, data };
 
-  return patches ? { ...response, patches } : response;
+  return patches ? { ...response, patches, isFinal: false } : response;
 }
 
 /**
