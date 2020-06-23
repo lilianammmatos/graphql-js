@@ -86,7 +86,7 @@ describe('Star Wars Query Deferred Tests', () => {
 
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - tests will fail if patchesIterable is not defined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);
@@ -123,7 +123,7 @@ describe('Star Wars Query Deferred Tests', () => {
 
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - tests will fail if patchesIterable is not defined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);
@@ -178,7 +178,7 @@ describe('Star Wars Query Deferred Tests', () => {
 
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - tests will fail if patchesIterable is not defined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);
@@ -237,7 +237,7 @@ describe('Star Wars Query Deferred Tests', () => {
 
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - tests will fail if patchesIterable is not defined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);
@@ -328,7 +328,7 @@ describe('Star Wars Query Deferred Tests', () => {
 
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - tests will fail if patchesIterable is not defined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);
@@ -414,7 +414,7 @@ describe('Star Wars Query Deferred Tests', () => {
       });
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - tests will fail if patchesIterable is not defined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);
@@ -465,7 +465,7 @@ describe('Star Wars Query Deferred Tests', () => {
       });
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - tests will fail if patchesIterable is not defined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);
@@ -551,7 +551,7 @@ describe('Star Wars Query Deferred Tests', () => {
 
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - tests will fail if patchesIterable is not defined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);
@@ -597,7 +597,7 @@ describe('Star Wars Query Deferred Tests', () => {
 
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - tests will fail if patchesIterable is not defined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);
