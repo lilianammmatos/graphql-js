@@ -215,7 +215,7 @@ export const GraphQLStreamDirective = new GraphQLDirective({
       type: GraphQLNonNull(GraphQLString),
       description: 'Unique name',
     },
-    initialCount: {
+    initial_count: {
       type: GraphQLNonNull(GraphQLInt),
       description: 'Number of items to return immediately',
     },

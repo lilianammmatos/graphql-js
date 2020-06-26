@@ -1083,8 +1083,8 @@ function completeListValue(
       stream &&
       stream.if !== false &&
       typeof stream.label === 'string' &&
-      typeof stream.initialCount === 'number' &&
-      index >= stream.initialCount
+      typeof stream.initial_count === 'number' &&
+      index >= stream.initial_count
     ) {
       const patchErrors = [];
       exeContext.dispatcher.add(
