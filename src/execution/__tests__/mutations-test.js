@@ -239,7 +239,7 @@ describe('Execute: Handles mutation execution ordering', () => {
         first: {},
         second: { theNumber: 2 },
       },
-      isFinal: false,
+      is_final: false,
     });
     expect(patches).to.deep.equal([
       {
@@ -248,7 +248,7 @@ describe('Execute: Handles mutation execution ordering', () => {
         data: {
           promiseToGetTheNumber: 2,
         },
-        isFinal: true,
+        is_final: true,
       },
     ]);
   });
@@ -309,7 +309,7 @@ describe('Execute: Handles mutation execution ordering', () => {
       data: {
         second: { theNumber: 2 },
       },
-      isFinal: false,
+      is_final: false,
     });
     expect(patches).to.deep.equal([
       {
@@ -320,7 +320,7 @@ describe('Execute: Handles mutation execution ordering', () => {
             theNumber: 1,
           },
         },
-        isFinal: true,
+        is_final: true,
       },
     ]);
   });

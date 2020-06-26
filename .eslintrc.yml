@@ -337,7 +337,7 @@ rules:
   # Stylistic Issues
   # https://eslint.org/docs/rules/#stylistic-issues
 
-  camelcase: error
+  camelcase: off # temporary to support is_final
   capitalized-comments: off # maybe
   consistent-this: off
   func-name-matching: off

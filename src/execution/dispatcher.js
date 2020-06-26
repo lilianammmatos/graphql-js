@@ -58,7 +58,7 @@ export class Dispatcher {
                 ...result,
                 value: {
                   ...result.value,
-                  isFinal,
+                  is_final: isFinal,
                 },
               },
               index,
@@ -94,6 +94,6 @@ export type ExecutionPatchResult = {
   data?: mixed | null,
   path: $ReadOnlyArray<string | number>,
   label: string,
-  isFinal?: boolean,
+  is_final?: boolean,
   ...
 };
