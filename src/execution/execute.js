@@ -389,26 +389,19 @@ function executeOperation(
       result = executeFieldsSerially(exeContext, type, rootValue, path, fields);
     } else {
       result = executeFields(exeContext, type, rootValue, path, fields);
+    }
 
-      for (const patch of patches) {
-        const { label, fields: patchFields } = patch;
-        const errors = [];
+    for (const patch of patches) {
+      const { label, fields: patchFields } = patch;
+      const errors = [];
 
-        exeContext.dispatcher.add(
-          label,
-          path,
-          () =>
-            executeFields(
-              exeContext,
-              type,
-              rootValue,
-              path,
-              patchFields,
-              errors,
-            ),
-          errors,
-        );
-      }
+      exeContext.dispatcher.add(
+        label,
+        path,
+        () =>
+          executeFields(exeContext, type, rootValue, path, patchFields, errors),
+        errors,
+      );
     }
 
     if (isPromise(result)) {
