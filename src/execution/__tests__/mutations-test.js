@@ -55,6 +55,15 @@ class Root {
 const numberHolderType = new GraphQLObjectType({
   fields: {
     theNumber: { type: GraphQLInt },
+    promiseToGettheNumber: {
+      type: GraphQLInt,
+      resolve: (root) =>
+        new Promise((resolve) => {
+          process.nextTick(() => {
+            resolve(root.theNumber);
+          });
+        }),
+    },
   },
   name: 'NumberHolder',
 });
@@ -99,6 +108,7 @@ const schema = new GraphQLSchema({
     },
     name: 'Mutation',
   }),
+  experimentalDefer: true,
 });
 
 describe('Execute: Handles mutation execution ordering', () => {
@@ -195,5 +205,119 @@ describe('Execute: Handles mutation execution ordering', () => {
         },
       ],
     });
+  });
+  it('Mutation fields with @defer do not block next mutation', async () => {
+    const document = parse(`
+      mutation M {
+        first: promiseToChangeTheNumber(newNumber: 1) {
+          ...DeferFragment @defer(label: "defer-label")
+        },
+        second: immediatelyChangeTheNumber(newNumber: 2) {
+          theNumber
+        }
+      }
+      fragment DeferFragment on NumberHolder {
+        promiseToGettheNumber
+      }
+    `);
+
+    const rootValue = new Root(6);
+    const mutationResult = await execute({ schema, document, rootValue });
+    const { patches: patchesIterable, ...initial } = mutationResult;
+
+    const patches = [];
+
+    /* istanbul ignore else */
+    if (patchesIterable) {
+      for await (const patch of patchesIterable) {
+        patches.push(patch);
+      }
+    }
+
+    expect(initial).to.deep.equal({
+      data: {
+        first: {},
+        second: { theNumber: 2 },
+      },
+    });
+    expect(patches).to.deep.equal([
+      {
+        label: 'defer-label',
+        path: ['first'],
+        data: {
+          promiseToGettheNumber: 2,
+        },
+      },
+    ]);
+  });
+  it('Mutation inside of a fragment', async () => {
+    const document = parse(`
+      mutation M {
+        ...MutationFragment
+        second: immediatelyChangeTheNumber(newNumber: 2) {
+          theNumber
+        }
+      }
+      fragment MutationFragment on Mutation {
+        first: promiseToChangeTheNumber(newNumber: 1) {
+          theNumber
+        },
+      }
+    `);
+
+    const rootValue = new Root(6);
+    const mutationResult = await execute({ schema, document, rootValue });
+
+    expect(mutationResult).to.deep.equal({
+      data: {
+        first: { theNumber: 1 },
+        second: { theNumber: 2 },
+      },
+    });
+  });
+  it('Mutation with @defer is not executed serially', async () => {
+    const document = parse(`
+      mutation M {
+        ...MutationFragment @defer(label: "defer-label")
+        second: immediatelyChangeTheNumber(newNumber: 2) {
+          theNumber
+        }
+      }
+      fragment MutationFragment on Mutation {
+        first: promiseToChangeTheNumber(newNumber: 1) {
+          theNumber
+        },
+      }
+    `);
+
+    const rootValue = new Root(6);
+    const mutationResult = await execute({ schema, document, rootValue });
+    const { patches: patchesIterable, ...initial } = mutationResult;
+
+    const patches = [];
+
+    /* istanbul ignore else */
+    if (patchesIterable) {
+      for await (const patch of patchesIterable) {
+        patches.push(patch);
+      }
+    }
+
+    expect(initial).to.deep.equal({
+      data: {
+        second: { theNumber: 2 },
+      },
+    });
+    expect(patches).to.deep.equal([
+      {
+        label: 'defer-label',
+        path: [],
+        data: {
+          first: {
+            theNumber: 1,
+          },
+        },
+      },
+    ]);
   });
 });
