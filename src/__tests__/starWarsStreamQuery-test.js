@@ -215,7 +215,7 @@ describe('Star Wars Query Stream Tests', () => {
       });
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - test will fail if patches is undefined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);
@@ -273,7 +273,7 @@ describe('Star Wars Query Stream Tests', () => {
       });
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - test will fail if patches is undefined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);
@@ -340,7 +340,7 @@ describe('Star Wars Query Stream Tests', () => {
 
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - test will fail if patches is undefined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);
@@ -383,7 +383,7 @@ describe('Star Wars Query Stream Tests', () => {
 
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else - test will fail if patches is undefined */
       if (patchesIterable) {
         for await (const patch of patchesIterable) {
           patches.push(patch);

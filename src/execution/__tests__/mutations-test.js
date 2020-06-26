@@ -55,7 +55,7 @@ class Root {
 const numberHolderType = new GraphQLObjectType({
   fields: {
     theNumber: { type: GraphQLInt },
-    promiseToGettheNumber: {
+    promiseToGetTheNumber: {
       type: GraphQLInt,
       resolve: (root) =>
         new Promise((resolve) => {
@@ -217,7 +217,7 @@ describe('Execute: Handles mutation execution ordering', () => {
         }
       }
       fragment DeferFragment on NumberHolder {
-        promiseToGettheNumber
+        promiseToGetTheNumber
       }
     `);
 
@@ -227,7 +227,7 @@ describe('Execute: Handles mutation execution ordering', () => {
 
     const patches = [];
 
-    /* istanbul ignore else */
+    /* istanbul ignore else - test will fail if patches is undefined */
     if (patchesIterable) {
       for await (const patch of patchesIterable) {
         patches.push(patch);
@@ -239,14 +239,16 @@ describe('Execute: Handles mutation execution ordering', () => {
         first: {},
         second: { theNumber: 2 },
       },
+      isFinal: false,
     });
     expect(patches).to.deep.equal([
       {
         label: 'defer-label',
         path: ['first'],
         data: {
-          promiseToGettheNumber: 2,
+          promiseToGetTheNumber: 2,
         },
+        isFinal: true,
       },
     ]);
   });
@@ -296,7 +298,7 @@ describe('Execute: Handles mutation execution ordering', () => {
 
     const patches = [];
 
-    /* istanbul ignore else */
+    /* istanbul ignore else - test will fail if patches is undefined */
     if (patchesIterable) {
       for await (const patch of patchesIterable) {
         patches.push(patch);
@@ -307,6 +309,7 @@ describe('Execute: Handles mutation execution ordering', () => {
       data: {
         second: { theNumber: 2 },
       },
+      isFinal: false,
     });
     expect(patches).to.deep.equal([
       {
@@ -317,6 +320,7 @@ describe('Execute: Handles mutation execution ordering', () => {
             theNumber: 1,
           },
         },
+        isFinal: true,
       },
     ]);
   });
