@@ -56,7 +56,7 @@ class Root {
 const numberHolderType = new GraphQLObjectType({
   fields: {
     theNumber: { type: GraphQLInt },
-    promiseToGettheNumber: {
+    promiseToGetTheNumber: {
       type: GraphQLInt,
       resolve: (root) =>
         new Promise((resolve) => {
@@ -218,7 +218,7 @@ describe('Execute: Handles mutation execution ordering', () => {
         }
       }
       fragment DeferFragment on NumberHolder {
-        promiseToGettheNumber
+        promiseToGetTheNumber
       }
     `);
 
@@ -245,7 +245,7 @@ describe('Execute: Handles mutation execution ordering', () => {
         label: 'defer-label',
         path: ['first'],
         data: {
-          promiseToGettheNumber: 2,
+          promiseToGetTheNumber: 2,
         },
         hasNext: false,
       },
