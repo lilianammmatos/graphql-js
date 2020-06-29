@@ -239,7 +239,7 @@ describe('Execute: Handles mutation execution ordering', () => {
           first: {},
           second: { theNumber: 2 },
         },
-        isFinal: false,
+        hasNext: true,
       },
       {
         label: 'defer-label',
@@ -247,7 +247,7 @@ describe('Execute: Handles mutation execution ordering', () => {
         data: {
           promiseToGettheNumber: 2,
         },
-        isFinal: true,
+        hasNext: false,
       },
     ]);
   });
@@ -307,7 +307,7 @@ describe('Execute: Handles mutation execution ordering', () => {
         data: {
           second: { theNumber: 2 },
         },
-        isFinal: false,
+        hasNext: true,
       },
       {
         label: 'defer-label',
@@ -317,7 +317,7 @@ describe('Execute: Handles mutation execution ordering', () => {
             theNumber: 1,
           },
         },
-        isFinal: true,
+        hasNext: false,
       },
     ]);
   });

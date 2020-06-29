@@ -220,7 +220,7 @@ describe('Star Wars Query Stream Tests', () => {
               ],
             },
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           data: {
@@ -229,7 +229,7 @@ describe('Star Wars Query Stream Tests', () => {
           },
           path: ['hero', 'friends', 2],
           label: 'sameLabel',
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });
@@ -278,7 +278,7 @@ describe('Star Wars Query Stream Tests', () => {
               ],
             },
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           data: {
@@ -286,7 +286,7 @@ describe('Star Wars Query Stream Tests', () => {
           },
           path: ['hero', 'friends', 2],
           label: 'idLabel',
-          isFinal: false,
+          hasNext: true,
         },
         {
           data: {
@@ -294,7 +294,7 @@ describe('Star Wars Query Stream Tests', () => {
           },
           path: ['hero', 'namedFriends', 1],
           label: 'nameLabel',
-          isFinal: false,
+          hasNext: true,
         },
         {
           data: {
@@ -302,7 +302,7 @@ describe('Star Wars Query Stream Tests', () => {
           },
           path: ['hero', 'namedFriends', 2],
           label: 'nameLabel',
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });
@@ -346,7 +346,7 @@ describe('Star Wars Query Stream Tests', () => {
               ],
             },
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           label: 'HeroFriends',
@@ -355,7 +355,7 @@ describe('Star Wars Query Stream Tests', () => {
             id: '1003',
             name: 'Leia Organa',
           },
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });
@@ -389,7 +389,7 @@ describe('Star Wars Query Stream Tests', () => {
               friends: [],
             },
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           data: {
@@ -409,7 +409,7 @@ describe('Star Wars Query Stream Tests', () => {
               path: ['hero', 'friends', 0, 'secretFriend'],
             },
           ],
-          isFinal: false,
+          hasNext: true,
         },
         {
           data: {
@@ -429,7 +429,7 @@ describe('Star Wars Query Stream Tests', () => {
               path: ['hero', 'friends', 1, 'secretFriend'],
             },
           ],
-          isFinal: false,
+          hasNext: true,
         },
         {
           data: {
@@ -449,7 +449,7 @@ describe('Star Wars Query Stream Tests', () => {
               path: ['hero', 'friends', 2, 'secretFriend'],
             },
           ],
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });

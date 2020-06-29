@@ -17,7 +17,7 @@ import isPromise from '../jsutils/isPromise';
 export type ExecutionResult = {|
   errors?: $ReadOnlyArray<GraphQLError>,
   data?: ObjMap<mixed> | null,
-  isFinal?: boolean,
+  hasNext?: boolean,
 |};
 
 /**
@@ -33,7 +33,7 @@ export type ExecutionPatchResult = {|
   data?: ObjMap<mixed> | mixed | null,
   path: $ReadOnlyArray<string | number>,
   label: string,
-  isFinal?: boolean,
+  hasNext?: boolean,
 |};
 
 export type AsyncExecutionResult = ExecutionResult | ExecutionPatchResult;
@@ -89,7 +89,7 @@ export class Dispatcher {
     const results = this._patches;
 
     function race(promises) {
-      const isFinal = promises.length === 1;
+      const hasNext = promises.length !== 1;
       return new Promise((resolve) => {
         promises.forEach((promise, index) => {
           promise.then((result) => {
@@ -98,7 +98,7 @@ export class Dispatcher {
                 ...result,
                 value: {
                   ...result.value,
-                  isFinal,
+                  hasNext,
                 },
               },
               index,
@@ -115,7 +115,7 @@ export class Dispatcher {
           return initialResult.then((value) => ({
             value: {
               ...value,
-              isFinal: false,
+              hasNext: true,
             },
             done: false,
           }));
@@ -123,7 +123,7 @@ export class Dispatcher {
         return Promise.resolve({
           value: {
             ...initialResult,
-            isFinal: false,
+            hasNext: true,
           },
           done: false,
         });

@@ -93,7 +93,7 @@ describe('Star Wars Query Deferred Tests', () => {
               id: '2001',
             },
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           label: 'NameFragment',
@@ -102,7 +102,7 @@ describe('Star Wars Query Deferred Tests', () => {
             id: '2001',
             name: 'R2-D2',
           },
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });
@@ -133,7 +133,7 @@ describe('Star Wars Query Deferred Tests', () => {
       expect(patches).to.deep.equal([
         {
           data: {},
-          isFinal: false,
+          hasNext: true,
         },
         {
           label: 'DeferQuery',
@@ -143,7 +143,7 @@ describe('Star Wars Query Deferred Tests', () => {
               id: '2001',
             },
           },
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });
@@ -190,7 +190,7 @@ describe('Star Wars Query Deferred Tests', () => {
               id: '2001',
             },
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           label: 'DeferNested',
@@ -199,7 +199,7 @@ describe('Star Wars Query Deferred Tests', () => {
             appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
             primaryFunction: 'Astromech',
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           label: 'DeferDroid',
@@ -208,7 +208,7 @@ describe('Star Wars Query Deferred Tests', () => {
             id: '2001',
             name: 'R2-D2',
           },
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });
@@ -250,7 +250,7 @@ describe('Star Wars Query Deferred Tests', () => {
               id: '1003',
             },
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           label: 'InlineDeferred',
@@ -259,7 +259,7 @@ describe('Star Wars Query Deferred Tests', () => {
             name: 'Leia Organa',
             homePlanet: 'Alderaan',
           },
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });
@@ -343,7 +343,7 @@ describe('Star Wars Query Deferred Tests', () => {
               ],
             },
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           label: 'DeferLuke',
@@ -368,7 +368,7 @@ describe('Star Wars Query Deferred Tests', () => {
               },
             ],
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           label: 'DeferHan',
@@ -390,7 +390,7 @@ describe('Star Wars Query Deferred Tests', () => {
               },
             ],
           },
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });
@@ -430,7 +430,7 @@ describe('Star Wars Query Deferred Tests', () => {
               id: '2001',
             },
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           label: 'SecretFragment',
@@ -446,7 +446,7 @@ describe('Star Wars Query Deferred Tests', () => {
               path: ['hero', 'secretBackstory'],
             },
           ],
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });
@@ -484,7 +484,7 @@ describe('Star Wars Query Deferred Tests', () => {
               id: '2001',
             },
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           label: 'SecretFriendsFragment',
@@ -538,7 +538,7 @@ describe('Star Wars Query Deferred Tests', () => {
               path: ['hero', 'friends', 2, 'secretBackstory'],
             },
           ],
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });
@@ -572,7 +572,7 @@ describe('Star Wars Query Deferred Tests', () => {
               name: 'R2-D2',
             },
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           data: {
@@ -587,7 +587,7 @@ describe('Star Wars Query Deferred Tests', () => {
             },
           ],
           path: ['mainHero'],
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });
@@ -620,7 +620,7 @@ describe('Star Wars Query Deferred Tests', () => {
               name: 'Leia Organa',
             },
           },
-          isFinal: false,
+          hasNext: true,
         },
         {
           label: 'SecretFragment',
@@ -635,7 +635,7 @@ describe('Star Wars Query Deferred Tests', () => {
               path: ['leia', 'secretFriend'],
             },
           ],
-          isFinal: true,
+          hasNext: false,
         },
       ]);
     });
