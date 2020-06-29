@@ -3,6 +3,7 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
 
+import isAsyncIterable from '../../jsutils/isAsyncIterable';
 import { parse } from '../../language/parser';
 
 import { GraphQLInt } from '../../type/scalars';
@@ -223,30 +224,30 @@ describe('Execute: Handles mutation execution ordering', () => {
 
     const rootValue = new Root(6);
     const mutationResult = await execute({ schema, document, rootValue });
-    const { patches: patchesIterable, ...initial } = mutationResult;
-
     const patches = [];
 
     /* istanbul ignore else */
-    if (patchesIterable) {
-      for await (const patch of patchesIterable) {
+    if (isAsyncIterable(mutationResult)) {
+      for await (const patch of mutationResult) {
         patches.push(patch);
       }
     }
 
-    expect(initial).to.deep.equal({
-      data: {
-        first: {},
-        second: { theNumber: 2 },
-      },
-    });
     expect(patches).to.deep.equal([
+      {
+        data: {
+          first: {},
+          second: { theNumber: 2 },
+        },
+        isFinal: false,
+      },
       {
         label: 'defer-label',
         path: ['first'],
         data: {
           promiseToGettheNumber: 2,
         },
+        isFinal: true,
       },
     ]);
   });
@@ -292,23 +293,22 @@ describe('Execute: Handles mutation execution ordering', () => {
 
     const rootValue = new Root(6);
     const mutationResult = await execute({ schema, document, rootValue });
-    const { patches: patchesIterable, ...initial } = mutationResult;
-
     const patches = [];
 
     /* istanbul ignore else */
-    if (patchesIterable) {
-      for await (const patch of patchesIterable) {
+    if (isAsyncIterable(mutationResult)) {
+      for await (const patch of mutationResult) {
         patches.push(patch);
       }
     }
 
-    expect(initial).to.deep.equal({
-      data: {
-        second: { theNumber: 2 },
-      },
-    });
     expect(patches).to.deep.equal([
+      {
+        data: {
+          second: { theNumber: 2 },
+        },
+        isFinal: false,
+      },
       {
         label: 'defer-label',
         path: [],
@@ -317,6 +317,7 @@ describe('Execute: Handles mutation execution ordering', () => {
             theNumber: 1,
           },
         },
+        isFinal: true,
       },
     ]);
   });

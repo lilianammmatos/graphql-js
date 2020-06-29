@@ -62,7 +62,12 @@ import {
 import { typeFromAST } from '../utilities/typeFromAST';
 import { getOperationRootType } from '../utilities/getOperationRootType';
 
-import { Dispatcher, type ExecutionPatchResult } from './dispatcher';
+import {
+  Dispatcher,
+  type ExecutionResult,
+  type ExecutionPatchResult,
+  type AsyncExecutionResult,
+} from './dispatcher';
 
 import {
   getVariableValues,
@@ -109,19 +114,6 @@ export type ExecutionContext = {|
   dispatcher: Dispatcher,
 |};
 
-/**
- * The result of GraphQL execution.
- *
- *   - `errors` is included when any errors occurred as a non-empty array.
- *   - `data` is the result of a successful execution of the query.
- */
-export type ExecutionResult = {|
-  errors?: $ReadOnlyArray<GraphQLError>,
-  data?: ObjMap<mixed> | null,
-  patches?: AsyncIterable<ExecutionPatchResult>,
-  isFinal?: boolean,
-|};
-
 export type ExecutionArgs = {|
   schema: GraphQLSchema,
   document: DocumentNode,
@@ -139,6 +131,8 @@ export type FieldsAndPatches = {
   ...
 };
 
+export type { ExecutionResult, ExecutionPatchResult, AsyncExecutionResult };
+
 /**
  * Implements the "Evaluating requests" section of the GraphQL specification.
  *
@@ -154,7 +148,7 @@ export type FieldsAndPatches = {
 declare function execute(
   ExecutionArgs,
   ..._: []
-): PromiseOrValue<ExecutionResult>;
+): PromiseOrValue<ExecutionResult | AsyncIterator<AsyncExecutionResult>>;
 /* eslint-disable no-redeclare */
 declare function execute(
   schema: GraphQLSchema,
@@ -165,7 +159,7 @@ declare function execute(
   operationName?: ?string,
   fieldResolver?: ?GraphQLFieldResolver<any, any>,
   typeResolver?: ?GraphQLTypeResolver<any, any>,
-): PromiseOrValue<ExecutionResult>;
+): PromiseOrValue<ExecutionResult | AsyncIterator<AsyncExecutionResult>>;
 export function execute(
   argsOrSchema,
   document,
@@ -192,7 +186,9 @@ export function execute(
       });
 }
 
-function executeImpl(args: ExecutionArgs): PromiseOrValue<ExecutionResult> {
+function executeImpl(
+  args: ExecutionArgs,
+): PromiseOrValue<ExecutionResult | AsyncIterator<AsyncExecutionResult>> {
   const {
     schema,
     document,
@@ -243,17 +239,21 @@ function executeImpl(args: ExecutionArgs): PromiseOrValue<ExecutionResult> {
 function buildResponse(
   exeContext: ExecutionContext,
   data: PromiseOrValue<ObjMap<mixed> | null>,
-): PromiseOrValue<ExecutionResult> {
+): PromiseOrValue<ExecutionResult | AsyncIterator<AsyncExecutionResult>> {
   if (isPromise(data)) {
     return data.then((resolved) => buildResponse(exeContext, resolved));
   }
-  const patches = exeContext.dispatcher.get();
-  const response =
+
+  const initialResult =
     exeContext.errors.length === 0
       ? { data }
       : { errors: exeContext.errors, data };
 
-  return patches ? { ...response, patches, isFinal: false } : response;
+  if (exeContext.dispatcher.hasPatches()) {
+    return exeContext.dispatcher.get(initialResult);
+  }
+
+  return initialResult;
 }
 
 /**
