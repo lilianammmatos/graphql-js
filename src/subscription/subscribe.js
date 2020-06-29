@@ -1,9 +1,8 @@
 // @flow strict
 
-import { SYMBOL_ASYNC_ITERATOR } from '../polyfills/symbols';
-
 import inspect from '../jsutils/inspect';
 import { addPath, pathToArray } from '../jsutils/Path';
+import isAsyncIterable from '../jsutils/isAsyncIterable';
 
 import { GraphQLError } from '../error/GraphQLError';
 import { locatedError } from '../error/locatedError';
@@ -156,16 +155,18 @@ function subscribeImpl(
 
   // Resolve the Source Stream, then map every source value to a
   // ExecutionResult value as described above.
-  return sourcePromise.then((resultOrStream) =>
+  return sourcePromise.then((resultOrStream) => {
     // Note: Flow can't refine isAsyncIterable, so explicit casts are used.
-    isAsyncIterable(resultOrStream)
-      ? mapAsyncIterator(
-          ((resultOrStream: any): AsyncIterable<mixed>),
-          mapSourceToResponse,
-          reportGraphQLError,
-        )
-      : ((resultOrStream: any): ExecutionResult),
-  );
+    if (isAsyncIterable(resultOrStream)) {
+      return ((mapAsyncIterator(
+        ((resultOrStream: any): AsyncIterable<mixed>),
+        mapSourceToResponse,
+        reportGraphQLError,
+      ): any): AsyncIterator<ExecutionResult>);
+    }
+
+    return ((resultOrStream: any): ExecutionResult);
+  });
 }
 
 /**
@@ -298,16 +299,4 @@ export function createSourceEventStream(
       ? Promise.resolve({ errors: [error] })
       : Promise.reject(error);
   }
-}
-
-/**
- * Returns true if the provided object implements the AsyncIterator protocol via
- * either implementing a `Symbol.asyncIterator` or `"@@asyncIterator"` method.
- */
-function isAsyncIterable(maybeAsyncIterable: mixed): boolean {
-  if (maybeAsyncIterable == null || typeof maybeAsyncIterable !== 'object') {
-    return false;
-  }
-
-  return typeof maybeAsyncIterable[SYMBOL_ASYNC_ITERATOR] === 'function';
 }

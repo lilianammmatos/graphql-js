@@ -3,6 +3,7 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
 
+import isAsyncIterable from '../jsutils/isAsyncIterable';
 import { graphql } from '../graphql';
 
 import {
@@ -194,43 +195,43 @@ describe('Star Wars Query Stream Tests', () => {
       }
     `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-
-      expect(initial).to.deep.equal({
-        data: {
-          hero: {
-            friends: [
-              {
-                id: '1000',
-                name: 'Luke Skywalker',
-              },
-              {
-                id: '1002',
-                name: 'Han Solo',
-              },
-            ],
-          },
-        },
-        isFinal: false,
-      });
       const patches = [];
 
       /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
           patches.push(patch);
         }
       }
-      expect(patches).to.have.lengthOf(1);
-      expect(patches[0]).to.deep.equal({
-        data: {
-          id: '1003',
-          name: 'Leia Organa',
+      expect(patches).to.have.lengthOf(2);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            hero: {
+              friends: [
+                {
+                  id: '1000',
+                  name: 'Luke Skywalker',
+                },
+                {
+                  id: '1002',
+                  name: 'Han Solo',
+                },
+              ],
+            },
+          },
+          isFinal: false,
         },
-        path: ['hero', 'friends', 2],
-        label: 'sameLabel',
-        isFinal: true,
-      });
+        {
+          data: {
+            id: '1003',
+            name: 'Leia Organa',
+          },
+          path: ['hero', 'friends', 2],
+          label: 'sameLabel',
+          isFinal: true,
+        },
+      ]);
     });
     it('Does allow multiple @stream with different label and initialCount when fields are aliased', async () => {
       const query = `
@@ -249,61 +250,61 @@ describe('Star Wars Query Stream Tests', () => {
       }
     `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-
-      expect(initial).to.deep.equal({
-        data: {
-          hero: {
-            friends: [
-              {
-                id: '1000',
-              },
-              {
-                id: '1002',
-              },
-            ],
-            namedFriends: [
-              {
-                name: 'Luke Skywalker',
-              },
-            ],
-          },
-        },
-        isFinal: false,
-      });
       const patches = [];
 
       /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
           patches.push(patch);
         }
       }
-      expect(patches).to.have.lengthOf(3);
-      expect(patches[0]).to.deep.equal({
-        data: {
-          id: '1003',
+      expect(patches).to.have.lengthOf(4);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            hero: {
+              friends: [
+                {
+                  id: '1000',
+                },
+                {
+                  id: '1002',
+                },
+              ],
+              namedFriends: [
+                {
+                  name: 'Luke Skywalker',
+                },
+              ],
+            },
+          },
+          isFinal: false,
         },
-        path: ['hero', 'friends', 2],
-        label: 'idLabel',
-        isFinal: false,
-      });
-      expect(patches[1]).to.deep.equal({
-        data: {
-          name: 'Han Solo',
+        {
+          data: {
+            id: '1003',
+          },
+          path: ['hero', 'friends', 2],
+          label: 'idLabel',
+          isFinal: false,
         },
-        path: ['hero', 'namedFriends', 1],
-        label: 'nameLabel',
-        isFinal: false,
-      });
-      expect(patches[2]).to.deep.equal({
-        data: {
-          name: 'Leia Organa',
+        {
+          data: {
+            name: 'Han Solo',
+          },
+          path: ['hero', 'namedFriends', 1],
+          label: 'nameLabel',
+          isFinal: false,
         },
-        path: ['hero', 'namedFriends', 2],
-        label: 'nameLabel',
-        isFinal: true,
-      });
+        {
+          data: {
+            name: 'Leia Organa',
+          },
+          path: ['hero', 'namedFriends', 2],
+          label: 'nameLabel',
+          isFinal: true,
+        },
+      ]);
     });
   });
   describe('Basic Queries', () => {
@@ -319,44 +320,44 @@ describe('Star Wars Query Stream Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-      expect(initial).to.deep.equal({
-        data: {
-          hero: {
-            friends: [
-              {
-                id: '1000',
-                name: 'Luke Skywalker',
-              },
-              {
-                id: '1002',
-                name: 'Han Solo',
-              },
-            ],
-          },
-        },
-        isFinal: false,
-      });
-
       const patches = [];
 
       /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
           patches.push(patch);
         }
       }
 
-      expect(patches).to.have.lengthOf(1);
-      expect(patches[0]).to.deep.equal({
-        label: 'HeroFriends',
-        path: ['hero', 'friends', 2],
-        data: {
-          id: '1003',
-          name: 'Leia Organa',
+      expect(patches).to.have.lengthOf(2);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            hero: {
+              friends: [
+                {
+                  id: '1000',
+                  name: 'Luke Skywalker',
+                },
+                {
+                  id: '1002',
+                  name: 'Han Solo',
+                },
+              ],
+            },
+          },
+          isFinal: false,
         },
-        isFinal: true,
-      });
+        {
+          label: 'HeroFriends',
+          path: ['hero', 'friends', 2],
+          data: {
+            id: '1003',
+            name: 'Leia Organa',
+          },
+          isFinal: true,
+        },
+      ]);
     });
     it('Errors are added to the correct patch', async () => {
       const query = `
@@ -371,86 +372,86 @@ describe('Star Wars Query Stream Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-      expect(initial).to.deep.equal({
-        data: {
-          hero: {
-            friends: [],
-          },
-        },
-        isFinal: false,
-      });
-
       const patches = [];
 
       /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
           patches.push(patch);
         }
       }
 
-      expect(patches).to.have.lengthOf(3);
-      expect(patches[0]).to.deep.equal({
-        data: {
-          secretFriend: null,
-        },
-        path: ['hero', 'friends', 0],
-        label: 'HeroFriends',
-        errors: [
-          {
-            message: 'secretFriend is secret.',
-            locations: [
-              {
-                line: 6,
-                column: 17,
-              },
-            ],
-            path: ['hero', 'friends', 0, 'secretFriend'],
+      expect(patches).to.have.lengthOf(4);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            hero: {
+              friends: [],
+            },
           },
-        ],
-        isFinal: false,
-      });
-      expect(patches[1]).to.deep.equal({
-        data: {
-          secretFriend: null,
+          isFinal: false,
         },
-        path: ['hero', 'friends', 1],
-        label: 'HeroFriends',
-        errors: [
-          {
-            message: 'secretFriend is secret.',
-            locations: [
-              {
-                line: 6,
-                column: 17,
-              },
-            ],
-            path: ['hero', 'friends', 1, 'secretFriend'],
+        {
+          data: {
+            secretFriend: null,
           },
-        ],
-        isFinal: false,
-      });
-      expect(patches[2]).to.deep.equal({
-        data: {
-          secretFriend: null,
+          path: ['hero', 'friends', 0],
+          label: 'HeroFriends',
+          errors: [
+            {
+              message: 'secretFriend is secret.',
+              locations: [
+                {
+                  line: 6,
+                  column: 17,
+                },
+              ],
+              path: ['hero', 'friends', 0, 'secretFriend'],
+            },
+          ],
+          isFinal: false,
         },
-        path: ['hero', 'friends', 2],
-        label: 'HeroFriends',
-        errors: [
-          {
-            message: 'secretFriend is secret.',
-            locations: [
-              {
-                line: 6,
-                column: 17,
-              },
-            ],
-            path: ['hero', 'friends', 2, 'secretFriend'],
+        {
+          data: {
+            secretFriend: null,
           },
-        ],
-        isFinal: true,
-      });
+          path: ['hero', 'friends', 1],
+          label: 'HeroFriends',
+          errors: [
+            {
+              message: 'secretFriend is secret.',
+              locations: [
+                {
+                  line: 6,
+                  column: 17,
+                },
+              ],
+              path: ['hero', 'friends', 1, 'secretFriend'],
+            },
+          ],
+          isFinal: false,
+        },
+        {
+          data: {
+            secretFriend: null,
+          },
+          path: ['hero', 'friends', 2],
+          label: 'HeroFriends',
+          errors: [
+            {
+              message: 'secretFriend is secret.',
+              locations: [
+                {
+                  line: 6,
+                  column: 17,
+                },
+              ],
+              path: ['hero', 'friends', 2, 'secretFriend'],
+            },
+          ],
+          isFinal: true,
+        },
+      ]);
     });
   });
 });

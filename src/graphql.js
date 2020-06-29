@@ -2,6 +2,7 @@
 
 import type { PromiseOrValue } from './jsutils/PromiseOrValue';
 import isPromise from './jsutils/isPromise';
+import isAsyncIterable from './jsutils/isAsyncIterable';
 
 import type { Source } from './language/source';
 import { parse } from './language/parser';
@@ -15,7 +16,10 @@ import type {
 import type { GraphQLSchema } from './type/schema';
 import { validateSchema } from './type/validate';
 
-import type { ExecutionResult } from './execution/execute';
+import type {
+  ExecutionResult,
+  AsyncExecutionResult,
+} from './execution/execute';
 import { execute } from './execution/execute';
 
 /**
@@ -67,7 +71,10 @@ export type GraphQLArgs = {|
   fieldResolver?: ?GraphQLFieldResolver<any, any>,
   typeResolver?: ?GraphQLTypeResolver<any, any>,
 |};
-declare function graphql(GraphQLArgs, ..._: []): Promise<ExecutionResult>;
+declare function graphql(
+  GraphQLArgs,
+  ..._: []
+): Promise<ExecutionResult | AsyncIterator<AsyncExecutionResult>>;
 /* eslint-disable no-redeclare */
 declare function graphql(
   schema: GraphQLSchema,
@@ -78,7 +85,7 @@ declare function graphql(
   operationName?: ?string,
   fieldResolver?: ?GraphQLFieldResolver<any, any>,
   typeResolver?: ?GraphQLTypeResolver<any, any>,
-): Promise<ExecutionResult>;
+): Promise<ExecutionResult | AsyncIterator<AsyncExecutionResult>>;
 export function graphql(
   argsOrSchema,
   source,
@@ -155,14 +162,16 @@ export function graphqlSync(
         });
 
   // Assert that the execution was synchronous.
-  if (isPromise(result)) {
+  if (isPromise(result) || isAsyncIterable(result)) {
     throw new Error('GraphQL execution failed to complete synchronously.');
   }
 
   return result;
 }
 
-function graphqlImpl(args: GraphQLArgs): PromiseOrValue<ExecutionResult> {
+function graphqlImpl(
+  args: GraphQLArgs,
+): PromiseOrValue<ExecutionResult | AsyncIterator<AsyncExecutionResult>> {
   const {
     schema,
     source,
