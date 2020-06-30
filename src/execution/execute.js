@@ -426,8 +426,7 @@ function executeOperation(
       exeContext.dispatcher.add(
         label,
         path,
-        () =>
-          executeFields(exeContext, type, rootValue, path, patchFields, errors),
+        executeFields(exeContext, type, rootValue, path, patchFields, errors),
         errors,
       );
     }
@@ -1153,16 +1152,15 @@ function completeListValue(
       exeContext.dispatcher.add(
         stream.label,
         fieldPath,
-        () =>
-          completeValueCatchingError(
-            exeContext,
-            itemType,
-            fieldNodes,
-            info,
-            fieldPath,
-            item,
-            patchErrors,
-          ),
+        completeValueCatchingError(
+          exeContext,
+          itemType,
+          fieldNodes,
+          info,
+          fieldPath,
+          item,
+          patchErrors,
+        ),
         patchErrors,
       );
     } else {
@@ -1379,15 +1377,14 @@ function collectAndExecuteSubfields(
     exeContext.dispatcher.add(
       label,
       path,
-      () =>
-        executeFields(
-          exeContext,
-          returnType,
-          result,
-          path,
-          subPatchFieldNodes,
-          subPatchErrors,
-        ),
+      executeFields(
+        exeContext,
+        returnType,
+        result,
+        path,
+        subPatchFieldNodes,
+        subPatchErrors,
+      ),
       subPatchErrors,
     );
   }
