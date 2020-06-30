@@ -52,8 +52,7 @@ export class Dispatcher {
     this._patches = [];
   }
 
-  execute(fn: () => PromiseOrValue<mixed>): Promise<mixed> {
-    const data = fn();
+  getPromise(data: PromiseOrValue<mixed>): Promise<mixed> {
     if (isPromise(data)) {
       return data;
     }
@@ -67,11 +66,11 @@ export class Dispatcher {
   add(
     label: string,
     path: Path | void,
-    fn: () => PromiseOrValue<ObjMap<mixed> | mixed>,
+    promiseOrData: PromiseOrValue<ObjMap<mixed> | mixed>,
     errors: Array<GraphQLError>,
   ) {
     this._patches.push(
-      this.execute(fn).then((data) => {
+      this.getPromise(promiseOrData).then((data) => {
         const value: $Shape<ExecutionPatchResult> = {
           data,
           path: pathToArray(path),
