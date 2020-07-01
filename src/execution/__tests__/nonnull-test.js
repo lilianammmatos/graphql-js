@@ -112,8 +112,8 @@ function executeQuery(
   rootValue: mixed,
 ):
   | ExecutionResult
-  | AsyncIterator<AsyncExecutionResult>
-  | Promise<ExecutionResult | AsyncIterator<AsyncExecutionResult>> {
+  | AsyncIterable<AsyncExecutionResult>
+  | Promise<ExecutionResult | AsyncIterable<AsyncExecutionResult>> {
   return execute({ schema, document: parse(query), rootValue });
 }
 

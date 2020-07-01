@@ -74,7 +74,7 @@ export type GraphQLArgs = {|
 declare function graphql(
   GraphQLArgs,
   ..._: []
-): Promise<ExecutionResult | AsyncIterator<AsyncExecutionResult>>;
+): Promise<ExecutionResult | AsyncIterable<AsyncExecutionResult>>;
 /* eslint-disable no-redeclare */
 declare function graphql(
   schema: GraphQLSchema,
@@ -85,7 +85,7 @@ declare function graphql(
   operationName?: ?string,
   fieldResolver?: ?GraphQLFieldResolver<any, any>,
   typeResolver?: ?GraphQLTypeResolver<any, any>,
-): Promise<ExecutionResult | AsyncIterator<AsyncExecutionResult>>;
+): Promise<ExecutionResult | AsyncIterable<AsyncExecutionResult>>;
 export function graphql(
   argsOrSchema,
   source,
@@ -171,7 +171,7 @@ export function graphqlSync(
 
 function graphqlImpl(
   args: GraphQLArgs,
-): PromiseOrValue<ExecutionResult | AsyncIterator<AsyncExecutionResult>> {
+): PromiseOrValue<ExecutionResult | AsyncIterable<AsyncExecutionResult>> {
   const {
     schema,
     source,

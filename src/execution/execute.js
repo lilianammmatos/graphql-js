@@ -159,7 +159,7 @@ export type { ExecutionResult, ExecutionPatchResult, AsyncExecutionResult };
 declare function execute(
   ExecutionArgs,
   ..._: []
-): PromiseOrValue<ExecutionResult | AsyncIterator<AsyncExecutionResult>>;
+): PromiseOrValue<ExecutionResult | AsyncIterable<AsyncExecutionResult>>;
 /* eslint-disable no-redeclare */
 declare function execute(
   schema: GraphQLSchema,
@@ -170,7 +170,7 @@ declare function execute(
   operationName?: ?string,
   fieldResolver?: ?GraphQLFieldResolver<any, any>,
   typeResolver?: ?GraphQLTypeResolver<any, any>,
-): PromiseOrValue<ExecutionResult | AsyncIterator<AsyncExecutionResult>>;
+): PromiseOrValue<ExecutionResult | AsyncIterable<AsyncExecutionResult>>;
 export function execute(
   argsOrSchema,
   document,
@@ -210,12 +210,13 @@ export function executeSync(args: ExecutionArgs): ExecutionResult {
     throw new Error('GraphQL execution failed to complete synchronously.');
   }
 
-  return result;
+  // Note: Flow can't refine isAsyncIterable, so explicit casts are used.
+  return ((result: any): ExecutionResult);
 }
 
 function executeImpl(
   args: ExecutionArgs,
-): PromiseOrValue<ExecutionResult | AsyncIterator<AsyncExecutionResult>> {
+): PromiseOrValue<ExecutionResult | AsyncIterable<AsyncExecutionResult>> {
   const {
     schema,
     document,
@@ -266,7 +267,7 @@ function executeImpl(
 function buildResponse(
   exeContext: ExecutionContext,
   data: PromiseOrValue<ObjMap<mixed> | null>,
-): PromiseOrValue<ExecutionResult | AsyncIterator<AsyncExecutionResult>> {
+): PromiseOrValue<ExecutionResult | AsyncIterable<AsyncExecutionResult>> {
   if (isPromise(data)) {
     return data.then((resolved) => buildResponse(exeContext, resolved));
   }
