@@ -13,6 +13,7 @@ import isPromise from '../jsutils/isPromise';
  *
  *   - `errors` is included when any errors occurred as a non-empty array.
  *   - `data` is the result of a successful execution of the query.
+ *   - `hasNext` is true if a future payload is expected.
  */
 export type ExecutionResult = {|
   errors?: $ReadOnlyArray<GraphQLError>,
@@ -25,8 +26,9 @@ export type ExecutionResult = {|
  *
  *   - `errors` is included when any errors occurred as a non-empty array.
  *   - `data` is the result of the additional asynchronous data.
- *   - `path` is the location of data .
+ *   - `path` is the location of data.
  *   - `label` is the label provided to @defer or @stream.
+ *   - `hasNext` is true if a future payload is expected.
  */
 export type ExecutionPatchResult = {|
   errors?: $ReadOnlyArray<GraphQLError>,
