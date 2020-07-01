@@ -15,7 +15,7 @@ import isCollection from '../jsutils/isCollection';
 import promiseReduce from '../jsutils/promiseReduce';
 import promiseForObject from '../jsutils/promiseForObject';
 import { addPath, pathToArray } from '../jsutils/Path';
-import { Dispatcher, type ExecutionPatchResult } from '../type/dispatcher';
+import isAsyncIterable from '../jsutils/isAsyncIterable';
 
 import type { GraphQLFormattedError } from '../error/formatError';
 import { GraphQLError } from '../error/GraphQLError';
@@ -67,19 +67,18 @@ import {
 import { typeFromAST } from '../utilities/typeFromAST';
 import { getOperationRootType } from '../utilities/getOperationRootType';
 
-import {
-  Dispatcher,
-  type ExecutionResult,
-  type ExecutionPatchResult,
-  type AsyncExecutionResult,
+import type {
+  ExecutionResult,
+  ExecutionPatchResult,
+  AsyncExecutionResult,
 } from './dispatcher';
+import { Dispatcher } from './dispatcher';
 
 import {
   getVariableValues,
   getArgumentValues,
   getDirectiveValues,
 } from './values';
-import isAsyncIterable from '../jsutils/isAsyncIterable';
 
 /**
  * Terminology

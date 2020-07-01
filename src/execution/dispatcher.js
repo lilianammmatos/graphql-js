@@ -2,10 +2,11 @@
 
 import { SYMBOL_ASYNC_ITERATOR } from '../polyfills/symbols';
 
-import { type Path, pathToArray } from '../jsutils/Path';
-import { type ObjMap } from '../jsutils/ObjMap';
-import { type PromiseOrValue } from '../jsutils/PromiseOrValue';
+import type { Path } from '../jsutils/Path';
+import type { ObjMap } from '../jsutils/ObjMap';
+import type { PromiseOrValue } from '../jsutils/PromiseOrValue';
 import { GraphQLError } from '../error/GraphQLError';
+import { pathToArray } from '../jsutils/Path';
 import isPromise from '../jsutils/isPromise';
 
 /**

@@ -78,7 +78,7 @@ describe('Star Wars Query Deferred Tests', () => {
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
       if (isAsyncIterable(result)) {
         for await (const patch of result) {
           patches.push(patch);
@@ -122,7 +122,7 @@ describe('Star Wars Query Deferred Tests', () => {
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
       if (isAsyncIterable(result)) {
         for await (const patch of result) {
           patches.push(patch);
@@ -175,7 +175,7 @@ describe('Star Wars Query Deferred Tests', () => {
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
       if (isAsyncIterable(result)) {
         for await (const patch of result) {
           patches.push(patch);
@@ -236,7 +236,7 @@ describe('Star Wars Query Deferred Tests', () => {
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
       if (isAsyncIterable(result)) {
         for await (const patch of result) {
           patches.push(patch);
@@ -301,7 +301,7 @@ describe('Star Wars Query Deferred Tests', () => {
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
       if (isAsyncIterable(result)) {
         for await (const patch of result) {
           patches.push(patch);
@@ -416,7 +416,7 @@ describe('Star Wars Query Deferred Tests', () => {
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
       if (isAsyncIterable(result)) {
         for await (const patch of result) {
           patches.push(patch);
@@ -470,7 +470,7 @@ describe('Star Wars Query Deferred Tests', () => {
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
       if (isAsyncIterable(result)) {
         for await (const patch of result) {
           patches.push(patch);
@@ -558,7 +558,7 @@ describe('Star Wars Query Deferred Tests', () => {
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
       if (isAsyncIterable(result)) {
         for await (const patch of result) {
           patches.push(patch);
@@ -606,7 +606,7 @@ describe('Star Wars Query Deferred Tests', () => {
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
       const patches = [];
 
-      /* istanbul ignore else */
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
       if (isAsyncIterable(result)) {
         for await (const patch of result) {
           patches.push(patch);

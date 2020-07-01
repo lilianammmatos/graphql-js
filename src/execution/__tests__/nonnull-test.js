@@ -11,7 +11,8 @@ import { GraphQLNonNull, GraphQLObjectType } from '../../type/definition';
 
 import { buildSchema } from '../../utilities/buildASTSchema';
 
-import type { ExecutionResult } from '../execute';
+import type { ExecutionResult, AsyncExecutionResult } from '../execute';
+
 import { execute, executeSync } from '../execute';
 
 const syncError = new Error('sync');
@@ -109,7 +110,10 @@ const schema = buildSchema(`
 function executeQuery(
   query: string,
   rootValue: mixed,
-): ExecutionResult | Promise<ExecutionResult> {
+):
+  | ExecutionResult
+  | AsyncIterator<AsyncExecutionResult>
+  | Promise<ExecutionResult | AsyncIterator<AsyncExecutionResult>> {
   return execute({ schema, document: parse(query), rootValue });
 }
 

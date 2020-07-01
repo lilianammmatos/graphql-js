@@ -226,7 +226,7 @@ describe('Execute: Handles mutation execution ordering', () => {
     const mutationResult = await execute({ schema, document, rootValue });
     const patches = [];
 
-    /* istanbul ignore else */
+    /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
     if (isAsyncIterable(mutationResult)) {
       for await (const patch of mutationResult) {
         patches.push(patch);
@@ -295,7 +295,7 @@ describe('Execute: Handles mutation execution ordering', () => {
     const mutationResult = await execute({ schema, document, rootValue });
     const patches = [];
 
-    /* istanbul ignore else */
+    /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
     if (isAsyncIterable(mutationResult)) {
       for await (const patch of mutationResult) {
         patches.push(patch);
