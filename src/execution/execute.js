@@ -1,12 +1,14 @@
 // @flow strict
 
 import arrayFrom from '../polyfills/arrayFrom';
+import { SYMBOL_ASYNC_ITERATOR } from '../polyfills/symbols';
 
 import inspect from '../jsutils/inspect';
 import memoize3 from '../jsutils/memoize3';
 import invariant from '../jsutils/invariant';
 import devAssert from '../jsutils/devAssert';
 import isPromise from '../jsutils/isPromise';
+import isAsyncIterable from '../jsutils/isAsyncIterable';
 import { type ObjMap } from '../jsutils/ObjMap';
 import isObjectLike from '../jsutils/isObjectLike';
 import isCollection from '../jsutils/isCollection';
@@ -680,6 +682,57 @@ function getDeferredNodeLabel(
 }
 
 /**
+ * Returns the @stream directive if present
+ */
+function getStreamNodeLabel(
+  exeContext: ExecutionContext,
+  fieldNodes: $ReadOnlyArray<FieldNode>,
+): string {
+  // validation only allows equivalent streams on multiple fields, so it is
+  // safe to only check the first fieldNode for the stream directive
+  const stream = getDirectiveValues(
+    GraphQLStreamDirective,
+    fieldNodes[0],
+    exeContext.variableValues,
+  );
+
+  if (!stream) {
+    return '';
+  }
+  return stream.if !== false && typeof stream.label === 'string'
+    ? stream.label
+    : '';
+}
+
+/**
+ * Returns true if the index should be streamed. Returns false if the index
+ * should be part of the initial payload.
+ */
+function shouldIndexBeStreamed(
+  exeContext: ExecutionContext,
+  fieldNodes: $ReadOnlyArray<FieldNode>,
+  index: number,
+): boolean {
+  const stream = getDirectiveValues(
+    GraphQLStreamDirective,
+    fieldNodes[0],
+    exeContext.variableValues,
+  );
+
+  if (!stream) {
+    return false;
+  }
+
+  return (
+    exeContext.schema.__experimentalStream === true &&
+    stream.if !== false &&
+    typeof stream.label === 'string' &&
+    typeof stream.initialCount === 'number' &&
+    index >= stream.initialCount
+  );
+}
+
+/**
  * Determines if a fragment is applicable to the given type.
  */
 function doesFragmentConditionMatch(
@@ -1041,6 +1094,89 @@ function completeValue(
   );
 }
 
+function completeAsyncIterableValue(
+  exeContext: ExecutionContext,
+  returnType: GraphQLList<GraphQLOutputType>,
+  fieldNodes: $ReadOnlyArray<FieldNode>,
+  info: GraphQLResolveInfo,
+  path: Path,
+  result: AsyncIterable<mixed>,
+  errors?: Array<GraphQLError>,
+): Promise<$ReadOnlyArray<mixed>> {
+  // $FlowFixMe
+  const iteratorMethod = result[SYMBOL_ASYNC_ITERATOR];
+  const iterator = iteratorMethod.call(result);
+
+  const completedResults = [];
+  let index = 0;
+
+  const itemType = returnType.ofType;
+
+  const streamLabel = getStreamNodeLabel(exeContext, fieldNodes);
+
+  const handleNext = () => {
+    const fieldPath = addPath(path, index);
+    return iterator.next().then(
+      ({ value, done }) => {
+        if (done) {
+          return;
+        }
+        completedResults.push(
+          completeValue(
+            exeContext,
+            itemType,
+            fieldNodes,
+            info,
+            fieldPath,
+            value,
+            errors,
+          ),
+        );
+        index++;
+        if (shouldIndexBeStreamed(exeContext, fieldNodes, index)) {
+          exeContext.dispatcher.addAsyncIterable(
+            streamLabel,
+            index,
+            path,
+            result,
+            (patchValue, patchFieldPath, patchErrors) =>
+              completeValue(
+                exeContext,
+                itemType,
+                fieldNodes,
+                info,
+                patchFieldPath,
+                patchValue,
+                patchErrors,
+              ),
+            (error, patchFieldPath, patchErrors) =>
+              handleFieldError(
+                error,
+                fieldNodes,
+                patchFieldPath,
+                itemType,
+                exeContext,
+                patchErrors,
+              ),
+          );
+          return;
+        }
+        return handleNext();
+      },
+      (error) =>
+        handleFieldError(
+          error,
+          fieldNodes,
+          fieldPath,
+          itemType,
+          exeContext,
+          errors,
+        ),
+    );
+  };
+
+  return handleNext().then(() => completedResults);
+}
 /**
  * Complete a list value by completing each item in the list with the
  * inner type
@@ -1054,19 +1190,25 @@ function completeListValue(
   result: mixed,
   errors?: Array<GraphQLError>,
 ): PromiseOrValue<$ReadOnlyArray<mixed>> {
+  if (isAsyncIterable(result)) {
+    return completeAsyncIterableValue(
+      exeContext,
+      returnType,
+      fieldNodes,
+      info,
+      path,
+      result,
+      errors,
+    );
+  }
+
   if (!isCollection(result)) {
     throw new GraphQLError(
       `Expected Iterable, but did not find one for field "${info.parentType.name}.${info.fieldName}".`,
     );
   }
 
-  // validation only allows equivalent streams on multiple fields, so it is
-  // safe to only check the first fieldNode for the stream directive
-  const stream = getDirectiveValues(
-    GraphQLStreamDirective,
-    fieldNodes[0],
-    exeContext.variableValues,
-  );
+  const streamLabel = getStreamNodeLabel(exeContext, fieldNodes);
 
   // This is specified as a simple map, however we're optimizing the path
   // where the list contains no Promises by avoiding creating another Promise.
@@ -1076,17 +1218,10 @@ function completeListValue(
     // No need to modify the info object containing the path,
     // since from here on it is not ever accessed by resolver functions.
     const fieldPath = addPath(path, index);
-    if (
-      exeContext.schema.__experimentalStream === true &&
-      stream &&
-      stream.if !== false &&
-      typeof stream.label === 'string' &&
-      typeof stream.initialCount === 'number' &&
-      index >= stream.initialCount
-    ) {
+    if (shouldIndexBeStreamed(exeContext, fieldNodes, index)) {
       const patchErrors = [];
       exeContext.dispatcher.add(
-        stream.label,
+        streamLabel,
         fieldPath,
         completeValueCatchingError(
           exeContext,

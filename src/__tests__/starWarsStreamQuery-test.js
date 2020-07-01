@@ -359,6 +359,174 @@ describe('Star Wars Query Stream Tests', () => {
         },
       ]);
     });
+    it.only('Can @stream an array field that returns an async iterable', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          human(id: "1000") {
+            friendsAsync @stream(initialCount: 2, label: "HumanFriends") {
+              id
+              name
+            }
+          }
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      console.log(JSON.stringify(result, null, 2));
+      const patches = [];
+
+      /* istanbul ignore else */
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
+          console.log(patch);
+          patches.push(patch);
+        }
+      }
+
+      expect(patches).to.have.lengthOf(3);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            human: {
+              friendsAsync: [
+                {
+                  id: '1002',
+                  name: 'Han Solo',
+                },
+                {
+                  id: '1003',
+                  name: 'Leia Organa',
+                },
+              ],
+            },
+          },
+          hasNext: true,
+        },
+        {
+          data: {
+            id: '2000',
+            name: 'C-3PO',
+          },
+          path: ['human', 'friendsAsync', 2],
+          label: 'HumanFriends',
+          hasNext: true,
+        },
+        {
+          data: {
+            id: '2001',
+            name: 'R2-D2',
+          },
+          path: ['human', 'friendsAsync', 3],
+          label: 'HumanFriends',
+          hasNext: false,
+        },
+      ]);
+    });
+    it('Handles errors when thrown in initial resolve', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          human(id: "1000") {
+            friendsAsync(errorIndex: 1) @stream(initialCount: 2, label: "HumanFriends") {
+              id
+              name
+            }
+          }
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+
+      expect(result).to.deep.equal({
+        errors: [
+          {
+            message: 'uh oh',
+            locations: [
+              {
+                line: 4,
+                column: 13,
+              },
+            ],
+            path: ['human', 'friendsAsync', 1],
+          },
+        ],
+        data: {
+          human: {
+            friendsAsync: [
+              {
+                id: '1002',
+                name: 'Han Solo',
+              },
+            ],
+          },
+        },
+      });
+    });
+    it('Handles errors when thrown in streamed resolve', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          human(id: "1000") {
+            friendsAsync(errorIndex: 3) @stream(initialCount: 2, label: "HumanFriends") {
+              id
+              name
+            }
+          }
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      const patches = [];
+
+      /* istanbul ignore else */
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
+          patches.push(patch);
+        }
+      }
+      expect(patches).to.have.lengthOf(3);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            human: {
+              friendsAsync: [
+                {
+                  id: '1002',
+                  name: 'Han Solo',
+                },
+                {
+                  id: '1003',
+                  name: 'Leia Organa',
+                },
+              ],
+            },
+          },
+          hasNext: true,
+        },
+        {
+          data: {
+            id: '2000',
+            name: 'C-3PO',
+          },
+          path: ['human', 'friendsAsync', 2],
+          label: 'HumanFriends',
+          hasNext: true,
+        },
+        {
+          data: null,
+          path: ['human', 'friendsAsync', 3],
+          label: 'HumanFriends',
+          errors: [
+            {
+              message: 'uh oh',
+              locations: [
+                {
+                  line: 4,
+                  column: 13,
+                },
+              ],
+              path: ['human', 'friendsAsync', 3],
+            },
+          ],
+          hasNext: false,
+        },
+      ]);
+    });
     it('Errors are added to the correct patch', async () => {
       const query = `
         query HeroFriendsQuery {

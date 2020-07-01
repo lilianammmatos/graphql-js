@@ -2,11 +2,13 @@
 
 import { SYMBOL_ASYNC_ITERATOR } from '../polyfills/symbols';
 
-import { type Path, pathToArray } from '../jsutils/Path';
+import { type Path, pathToArray, addPath } from '../jsutils/Path';
 import { type ObjMap } from '../jsutils/ObjMap';
 import { type PromiseOrValue } from '../jsutils/PromiseOrValue';
 import { GraphQLError } from '../error/GraphQLError';
 import isPromise from '../jsutils/isPromise';
+
+const END_OF_ITERABLE = '@@END_OF_ITERABLE';
 
 /**
  * The result of GraphQL execution.
@@ -45,11 +47,21 @@ type DispatcherIteratorResultType = {|
   done: boolean,
 |};
 
+type PatchInfo = {|
+  result?: PromiseOrValue<mixed>,
+  type: 'promise' | 'asyncIterable',
+  path: $ReadOnlyArray<string | number>,
+  label: string,
+  errors?: $ReadOnlyArray<GraphQLError>,
+|};
+
 export class Dispatcher {
-  _patches: Array<Promise<DispatcherIteratorResultType>>;
+  _patches: Array<PatchInfo>;
 
   constructor() {
     this._patches = [];
+    this._hasNext = true;
+    this._hasReturnedInitialResult = false;
   }
 
   getPromise(data: PromiseOrValue<mixed>): Promise<mixed> {
@@ -69,78 +81,130 @@ export class Dispatcher {
     promiseOrData: PromiseOrValue<ObjMap<mixed> | mixed>,
     errors: Array<GraphQLError>,
   ) {
-    this._patches.push(
-      this.getPromise(promiseOrData).then((data) => {
-        const value: $Shape<ExecutionPatchResult> = {
-          data,
-          path: pathToArray(path),
-          label,
-          ...(errors && errors.length > 0 ? { errors } : {}),
-        };
+    this._patches.push({
+      result,
+    });
+    const patch = this.getPromise(promiseOrData).then((data) => {
+      const value: $Shape<ExecutionPatchResult> = {
+        data,
+        path: pathToArray(path),
+        label,
+        ...(errors && errors.length > 0 ? { errors } : {}),
+      };
 
-        return { value, done: false };
-      }),
-    );
+      return { value, done: false };
+    });
+    this._patches.push(patch);
+    return () => {
+      const index = this._patches.indexOf(patch);
+      if (index > -1) {
+        console.log('splicing');
+        this._patches.splice(index, 1);
+      }
+    };
+  }
+
+  addAsyncIterable(
+    label: string,
+    nextIndex: number,
+    path: Path | void,
+    result: AsyncIterable<mixed>,
+    completeValue: (mixed, Path, Array<GraphQLError>) => mixed,
+    handleFieldError: (Error, Path, Array<GraphQLError>) => null,
+  ) {
+    // $FlowFixMe
+    const iteratorMethod = result[SYMBOL_ASYNC_ITERATOR];
+    const iterator = iteratorMethod.call(result);
+    let index = nextIndex;
+    const handleNext = () => {
+      const fieldPath = addPath(path, index);
+      const patchErrors = [];
+      const removePatch = this.add(
+        label,
+        fieldPath,
+        iterator.next().then(
+          ({ value, done }) => {
+            if (done) {
+              removePatch();
+              return;
+            }
+            index++;
+            handleNext();
+            return completeValue(value, fieldPath, patchErrors);
+          },
+          (error) => {
+            handleFieldError(error, fieldPath, patchErrors);
+            this.add(label, fieldPath, null, patchErrors);
+          },
+        ),
+        patchErrors,
+      );
+    };
+
+    return handleNext();
+  }
+
+  race() {
+    console.log('promises.length', this._patches.length);
+    if (!this._patches.length) {
+      console.log('returning final empty patch');
+      this._hasNext = false;
+      return Promise.resolve({ value: { hasNext: false }, done: true });
+    }
+    return new Promise((resolve) => {
+      this._patches.forEach((promise, index) => {
+        promise.then((result) => {
+          console.log('resolving');
+          this._hasNext = this._patches.length !== 1;
+          resolve({
+            result: {
+              ...result,
+              value: {
+                ...result.value,
+                hasNext: this._hasNext,
+              },
+            },
+            index,
+          });
+        });
+      });
+    }).then(({ result, index }) => {
+      this._patches.splice(index, 1);
+      return result;
+    });
+  }
+
+  getNext() {
+    if (!this._hasReturnedInitialResult) {
+      this._hasReturnedInitialResult = true;
+      if (isPromise(this._initialResult)) {
+        return this._initialResult.then((value) => ({
+          value: {
+            ...value,
+            hasNext: true,
+          },
+          done: false,
+        }));
+      }
+      return Promise.resolve({
+        value: {
+          ...this._initialResult,
+          hasNext: true,
+        },
+        done: false,
+      });
+    } else if (this._patches.length === 0 && !this._hasNext) {
+      return Promise.resolve({ value: undefined, done: true });
+    }
+    return this.race(this._patches);
   }
 
   get(
     initialResult: PromiseOrValue<ExecutionResult>,
   ): AsyncIterator<AsyncExecutionResult> {
-    let hasReturnedInitialResult = false;
-    const results = this._patches;
-
-    function race(promises) {
-      const hasNext = promises.length !== 1;
-      return new Promise((resolve) => {
-        promises.forEach((promise, index) => {
-          promise.then((result) => {
-            resolve({
-              result: {
-                ...result,
-                value: {
-                  ...result.value,
-                  hasNext,
-                },
-              },
-              index,
-            });
-          });
-        });
-      });
-    }
-
-    const getNext = (promises) => {
-      if (!hasReturnedInitialResult) {
-        hasReturnedInitialResult = true;
-        if (isPromise(initialResult)) {
-          return initialResult.then((value) => ({
-            value: {
-              ...value,
-              hasNext: true,
-            },
-            done: false,
-          }));
-        }
-        return Promise.resolve({
-          value: {
-            ...initialResult,
-            hasNext: true,
-          },
-          done: false,
-        });
-      } else if (promises.length === 0) {
-        return Promise.resolve({ value: undefined, done: true });
-      }
-      return race(promises).then(({ result, index }) => {
-        promises.splice(index, 1);
-        return result;
-      });
-    };
-
+    this._initialResult = initialResult;
     return ({
-      next() {
-        return getNext(results);
-      },
+      next: () => this.getNext(),
       [SYMBOL_ASYNC_ITERATOR]() {
         return this;
       },

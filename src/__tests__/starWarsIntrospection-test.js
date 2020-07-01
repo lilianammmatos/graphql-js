@@ -36,6 +36,7 @@ describe('Star Wars Introspection Tests', () => {
             { name: 'Character' },
             { name: 'String' },
             { name: 'Episode' },
+            { name: 'Int' },
             { name: 'Droid' },
             { name: 'Query' },
             { name: 'Boolean' },
