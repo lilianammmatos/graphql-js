@@ -2,6 +2,7 @@
 
 import invariant from '../jsutils/invariant';
 import isPromise from '../jsutils/isPromise';
+import isAsyncIterable from '../jsutils/isAsyncIterable';
 
 import { parse } from '../language/parser';
 import { execute } from '../execution/execute';
@@ -34,6 +35,12 @@ export function introspectionFromSchema(
 
   const document = parse(getIntrospectionQuery(optionsWithDefaults));
   const result = execute({ schema, document });
-  invariant(!isPromise(result) && !result.errors && result.data);
+  invariant(
+    !isPromise(result) &&
+      !isAsyncIterable(result) &&
+      result.errors === undefined &&
+      result.data !== null &&
+      result.data !== undefined,
+  );
   return (result.data: any);
 }

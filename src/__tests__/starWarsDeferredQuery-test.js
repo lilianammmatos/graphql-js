@@ -3,6 +3,7 @@
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
 
+import isAsyncIterable from '../jsutils/isAsyncIterable';
 import { graphql } from '../graphql';
 
 import {
@@ -75,36 +76,37 @@ describe('Star Wars Query Deferred Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-      expect(initial).to.deep.equal({
-        data: {
-          hero: {
-            id: '2001',
-          },
-        },
-        isFinal: false,
-      });
-
       const patches = [];
 
       /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
           patches.push(patch);
         }
       }
 
-      expect(patches).to.have.lengthOf(1);
-      expect(patches[0]).to.deep.equal({
-        label: 'NameFragment',
-        path: ['hero'],
-        data: {
-          id: '2001',
-          name: 'R2-D2',
+      expect(patches).to.have.lengthOf(2);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            hero: {
+              id: '2001',
+            },
+          },
+          hasNext: true,
         },
-        isFinal: true,
-      });
+        {
+          label: 'NameFragment',
+          path: ['hero'],
+          data: {
+            id: '2001',
+            name: 'R2-D2',
+          },
+          hasNext: false,
+        },
+      ]);
     });
+
     it('Can defer a fragment on the top level Query field', async () => {
       const query = `
         query HeroNameQuery {
@@ -118,32 +120,32 @@ describe('Star Wars Query Deferred Tests', () => {
       `;
 
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-      expect(initial).to.deep.equal({
-        data: {},
-        isFinal: false,
-      });
-
       const patches = [];
 
       /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
           patches.push(patch);
         }
       }
 
-      expect(patches).to.have.lengthOf(1);
-      expect(patches[0]).to.deep.equal({
-        label: 'DeferQuery',
-        path: [],
-        data: {
-          hero: {
-            id: '2001',
-          },
+      expect(patches).to.have.lengthOf(2);
+      expect(patches).to.deep.equal([
+        {
+          data: {},
+          hasNext: true,
         },
-        isFinal: true,
-      });
+        {
+          label: 'DeferQuery',
+          path: [],
+          data: {
+            hero: {
+              id: '2001',
+            },
+          },
+          hasNext: false,
+        },
+      ]);
     });
   });
 
@@ -171,44 +173,44 @@ describe('Star Wars Query Deferred Tests', () => {
       `;
 
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-      expect(initial).to.deep.equal({
-        data: {
-          hero: {
-            id: '2001',
-          },
-        },
-        isFinal: false,
-      });
-
       const patches = [];
 
       /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
           patches.push(patch);
         }
       }
 
-      expect(patches).to.have.lengthOf(2);
-      expect(patches[0]).to.deep.equal({
-        label: 'DeferNested',
-        path: ['hero'],
-        data: {
-          appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
-          primaryFunction: 'Astromech',
+      expect(patches).to.have.lengthOf(3);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            hero: {
+              id: '2001',
+            },
+          },
+          hasNext: true,
         },
-        isFinal: false,
-      });
-      expect(patches[1]).to.deep.equal({
-        label: 'DeferDroid',
-        path: ['hero'],
-        data: {
-          id: '2001',
-          name: 'R2-D2',
+        {
+          label: 'DeferNested',
+          path: ['hero'],
+          data: {
+            appearsIn: ['NEW_HOPE', 'EMPIRE', 'JEDI'],
+            primaryFunction: 'Astromech',
+          },
+          hasNext: true,
         },
-        isFinal: true,
-      });
+        {
+          label: 'DeferDroid',
+          path: ['hero'],
+          data: {
+            id: '2001',
+            name: 'R2-D2',
+          },
+          hasNext: false,
+        },
+      ]);
     });
   });
 
@@ -230,37 +232,36 @@ describe('Star Wars Query Deferred Tests', () => {
             }
           }
         }
-
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-      expect(initial).to.deep.equal({
-        data: {
-          human: {
-            id: '1003',
-          },
-        },
-        isFinal: false,
-      });
-
       const patches = [];
 
       /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
           patches.push(patch);
         }
       }
-      expect(patches).to.have.lengthOf(1);
-      expect(patches[0]).to.deep.equal({
-        label: 'InlineDeferred',
-        path: ['human'],
-        data: {
-          name: 'Leia Organa',
-          homePlanet: 'Alderaan',
+      expect(patches).to.have.lengthOf(2);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            human: {
+              id: '1003',
+            },
+          },
+          hasNext: true,
         },
-        isFinal: true,
-      });
+        {
+          label: 'InlineDeferred',
+          path: ['human'],
+          data: {
+            name: 'Leia Organa',
+            homePlanet: 'Alderaan',
+          },
+          hasNext: false,
+        },
+      ]);
     });
   });
 
@@ -298,31 +299,66 @@ describe('Star Wars Query Deferred Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
+      const patches = [];
 
-      expect(initial).to.deep.equal({
-        data: {
-          han: {
-            __typename: 'Human',
-            id: '1002',
-            name: 'Han Solo',
+      /* istanbul ignore else */
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
+          patches.push(patch);
+        }
+      }
+
+      expect(patches).to.have.lengthOf(3);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            han: {
+              __typename: 'Human',
+              id: '1002',
+              name: 'Han Solo',
+            },
+            luke: {
+              id: '1000',
+              __typename: 'Human',
+              homePlanet: 'Tatooine',
+            },
+            leia: {
+              __typename: 'Human',
+              name: 'Leia Organa',
+              homePlanet: 'Alderaan',
+              id: '1003',
+              friends: [
+                {
+                  name: 'Luke Skywalker',
+                },
+                {
+                  name: 'Han Solo',
+                },
+                {
+                  name: 'C-3PO',
+                },
+                {
+                  name: 'R2-D2',
+                },
+              ],
+            },
           },
-          luke: {
+          hasNext: true,
+        },
+        {
+          label: 'DeferLuke',
+          path: ['luke'],
+          data: {
             id: '1000',
             __typename: 'Human',
+            name: 'Luke Skywalker',
             homePlanet: 'Tatooine',
-          },
-          leia: {
-            __typename: 'Human',
-            name: 'Leia Organa',
-            homePlanet: 'Alderaan',
-            id: '1003',
             friends: [
               {
-                name: 'Luke Skywalker',
+                name: 'Han Solo',
               },
               {
-                name: 'Han Solo',
+                name: 'Leia Organa',
               },
               {
                 name: 'C-3PO',
@@ -332,68 +368,31 @@ describe('Star Wars Query Deferred Tests', () => {
               },
             ],
           },
+          hasNext: true,
         },
-        isFinal: false,
-      });
-
-      const patches = [];
-
-      /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
-          patches.push(patch);
-        }
-      }
-
-      expect(patches).to.have.lengthOf(2);
-      expect(patches[0]).to.deep.equal({
-        label: 'DeferLuke',
-        path: ['luke'],
-        data: {
-          id: '1000',
-          __typename: 'Human',
-          name: 'Luke Skywalker',
-          homePlanet: 'Tatooine',
-          friends: [
-            {
-              name: 'Han Solo',
-            },
-            {
-              name: 'Leia Organa',
-            },
-            {
-              name: 'C-3PO',
-            },
-            {
-              name: 'R2-D2',
-            },
-          ],
+        {
+          label: 'DeferHan',
+          path: ['han'],
+          data: {
+            id: '1002',
+            __typename: 'Human',
+            name: 'Han Solo',
+            homePlanet: null,
+            friends: [
+              {
+                name: 'Luke Skywalker',
+              },
+              {
+                name: 'Leia Organa',
+              },
+              {
+                name: 'R2-D2',
+              },
+            ],
+          },
+          hasNext: false,
         },
-        isFinal: false,
-      });
-
-      expect(patches[1]).to.deep.equal({
-        label: 'DeferHan',
-        path: ['han'],
-        data: {
-          id: '1002',
-          __typename: 'Human',
-          name: 'Han Solo',
-          homePlanet: null,
-          friends: [
-            {
-              name: 'Luke Skywalker',
-            },
-            {
-              name: 'Leia Organa',
-            },
-            {
-              name: 'R2-D2',
-            },
-          ],
-        },
-        isFinal: true,
-      });
+      ]);
     });
   });
 
@@ -415,41 +414,41 @@ describe('Star Wars Query Deferred Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-
-      expect(initial).to.deep.equal({
-        data: {
-          hero: {
-            id: '2001',
-          },
-        },
-        isFinal: false,
-      });
       const patches = [];
 
       /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
           patches.push(patch);
         }
       }
-      expect(patches).to.have.lengthOf(1);
-      expect(patches[0]).to.deep.equal({
-        label: 'SecretFragment',
-        path: ['hero'],
-        data: {
-          name: 'R2-D2',
-          secretBackstory: null,
-        },
-        errors: [
-          {
-            message: 'secretBackstory is secret.',
-            locations: [{ line: 10, column: 11 }],
-            path: ['hero', 'secretBackstory'],
+      expect(patches).to.have.lengthOf(2);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            hero: {
+              id: '2001',
+            },
           },
-        ],
-        isFinal: true,
-      });
+          hasNext: true,
+        },
+        {
+          label: 'SecretFragment',
+          path: ['hero'],
+          data: {
+            name: 'R2-D2',
+            secretBackstory: null,
+          },
+          errors: [
+            {
+              message: 'secretBackstory is secret.',
+              locations: [{ line: 10, column: 11 }],
+              path: ['hero', 'secretBackstory'],
+            },
+          ],
+          hasNext: false,
+        },
+      ]);
     });
 
     it('Correctly reports error on accessing secretBackstory in a list', async () => {
@@ -469,78 +468,79 @@ describe('Star Wars Query Deferred Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-      expect(initial).to.deep.equal({
-        data: {
-          hero: {
-            id: '2001',
-          },
-        },
-        isFinal: false,
-      });
       const patches = [];
 
       /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
           patches.push(patch);
         }
       }
-      expect(patches).to.have.lengthOf(1);
-      expect(patches[0]).to.deep.equal({
-        label: 'SecretFriendsFragment',
-        path: ['hero'],
-        data: {
-          id: '2001',
-          friends: [
+      expect(patches).to.have.lengthOf(2);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            hero: {
+              id: '2001',
+            },
+          },
+          hasNext: true,
+        },
+        {
+          label: 'SecretFriendsFragment',
+          path: ['hero'],
+          data: {
+            id: '2001',
+            friends: [
+              {
+                name: 'Luke Skywalker',
+                secretBackstory: null,
+              },
+              {
+                name: 'Han Solo',
+                secretBackstory: null,
+              },
+              {
+                name: 'Leia Organa',
+                secretBackstory: null,
+              },
+            ],
+          },
+          errors: [
             {
-              name: 'Luke Skywalker',
-              secretBackstory: null,
+              message: 'secretBackstory is secret.',
+              locations: [
+                {
+                  line: 12,
+                  column: 13,
+                },
+              ],
+              path: ['hero', 'friends', 0, 'secretBackstory'],
             },
             {
-              name: 'Han Solo',
-              secretBackstory: null,
+              message: 'secretBackstory is secret.',
+              locations: [
+                {
+                  line: 12,
+                  column: 13,
+                },
+              ],
+              path: ['hero', 'friends', 1, 'secretBackstory'],
             },
             {
-              name: 'Leia Organa',
-              secretBackstory: null,
+              message: 'secretBackstory is secret.',
+              locations: [
+                {
+                  line: 12,
+                  column: 13,
+                },
+              ],
+              path: ['hero', 'friends', 2, 'secretBackstory'],
             },
           ],
+          hasNext: false,
         },
-        errors: [
-          {
-            message: 'secretBackstory is secret.',
-            locations: [
-              {
-                line: 12,
-                column: 13,
-              },
-            ],
-            path: ['hero', 'friends', 0, 'secretBackstory'],
-          },
-          {
-            message: 'secretBackstory is secret.',
-            locations: [
-              {
-                line: 12,
-                column: 13,
-              },
-            ],
-            path: ['hero', 'friends', 1, 'secretBackstory'],
-          },
-          {
-            message: 'secretBackstory is secret.',
-            locations: [
-              {
-                line: 12,
-                column: 13,
-              },
-            ],
-            path: ['hero', 'friends', 2, 'secretBackstory'],
-          },
-        ],
-        isFinal: true,
-      });
+      ]);
     });
 
     it('Correctly reports error on accessing through an alias', async () => {
@@ -556,40 +556,40 @@ describe('Star Wars Query Deferred Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-      expect(initial).to.deep.equal({
-        data: {
-          mainHero: {
-            name: 'R2-D2',
-          },
-        },
-        isFinal: false,
-      });
-
       const patches = [];
 
       /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
           patches.push(patch);
         }
       }
-      expect(patches).to.have.lengthOf(1);
-      expect(patches[0]).to.deep.equal({
-        data: {
-          story: null,
-        },
-        label: 'SecretFragment',
-        errors: [
-          {
-            message: 'secretBackstory is secret.',
-            locations: [{ line: 9, column: 13 }],
-            path: ['mainHero', 'story'],
+      expect(patches).to.have.lengthOf(2);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            mainHero: {
+              name: 'R2-D2',
+            },
           },
-        ],
-        path: ['mainHero'],
-        isFinal: true,
-      });
+          hasNext: true,
+        },
+        {
+          data: {
+            story: null,
+          },
+          label: 'SecretFragment',
+          errors: [
+            {
+              message: 'secretBackstory is secret.',
+              locations: [{ line: 9, column: 13 }],
+              path: ['mainHero', 'story'],
+            },
+          ],
+          path: ['mainHero'],
+          hasNext: false,
+        },
+      ]);
     });
     it('Correctly reports async error on accessing secretFiends', async () => {
       const query = `
@@ -604,40 +604,40 @@ describe('Star Wars Query Deferred Tests', () => {
         }
       `;
       const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
-      const { patches: patchesIterable, ...initial } = result;
-      expect(initial).to.deep.equal({
-        data: {
-          leia: {
-            name: 'Leia Organa',
-          },
-        },
-        isFinal: false,
-      });
-
       const patches = [];
 
       /* istanbul ignore else */
-      if (patchesIterable) {
-        for await (const patch of patchesIterable) {
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
           patches.push(patch);
         }
       }
-      expect(patches).to.have.lengthOf(1);
-      expect(patches[0]).to.deep.equal({
-        label: 'SecretFragment',
-        path: ['leia'],
-        data: {
-          secretFriend: null,
-        },
-        errors: [
-          {
-            message: 'secretFriend is secret.',
-            locations: [{ line: 9, column: 11 }],
-            path: ['leia', 'secretFriend'],
+      expect(patches).to.have.lengthOf(2);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            leia: {
+              name: 'Leia Organa',
+            },
           },
-        ],
-        isFinal: true,
-      });
+          hasNext: true,
+        },
+        {
+          label: 'SecretFragment',
+          path: ['leia'],
+          data: {
+            secretFriend: null,
+          },
+          errors: [
+            {
+              message: 'secretFriend is secret.',
+              locations: [{ line: 9, column: 11 }],
+              path: ['leia', 'secretFriend'],
+            },
+          ],
+          hasNext: false,
+        },
+      ]);
     });
   });
 });

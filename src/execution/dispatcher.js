@@ -3,13 +3,50 @@
 import { SYMBOL_ASYNC_ITERATOR } from '../polyfills/symbols';
 
 import { type Path, pathToArray } from '../jsutils/Path';
+import { type ObjMap } from '../jsutils/ObjMap';
 import { type PromiseOrValue } from '../jsutils/PromiseOrValue';
+import { GraphQLError } from '../error/GraphQLError';
 import isPromise from '../jsutils/isPromise';
 
-import { GraphQLError } from '../error/GraphQLError';
+/**
+ * The result of GraphQL execution.
+ *
+ *   - `errors` is included when any errors occurred as a non-empty array.
+ *   - `data` is the result of a successful execution of the query.
+ *   - `hasNext` is true if a future payload is expected.
+ */
+export type ExecutionResult = {|
+  errors?: $ReadOnlyArray<GraphQLError>,
+  data?: ObjMap<mixed> | null,
+  hasNext?: boolean,
+|};
+
+/**
+ * The result of an asynchronous GraphQL patch.
+ *
+ *   - `errors` is included when any errors occurred as a non-empty array.
+ *   - `data` is the result of the additional asynchronous data.
+ *   - `path` is the location of data.
+ *   - `label` is the label provided to @defer or @stream.
+ *   - `hasNext` is true if a future payload is expected.
+ */
+export type ExecutionPatchResult = {|
+  errors?: $ReadOnlyArray<GraphQLError>,
+  data?: ObjMap<mixed> | mixed | null,
+  path: $ReadOnlyArray<string | number>,
+  label: string,
+  hasNext?: boolean,
+|};
+
+export type AsyncExecutionResult = ExecutionResult | ExecutionPatchResult;
+
+type DispatcherIteratorResultType = {|
+  value: ExecutionPatchResult,
+  done: boolean,
+|};
 
 export class Dispatcher {
-  _patches: Array<Promise<{| value: ExecutionPatchResult, done: boolean |}>>;
+  _patches: Array<Promise<DispatcherIteratorResultType>>;
 
   constructor() {
     this._patches = [];
@@ -23,33 +60,38 @@ export class Dispatcher {
     return Promise.resolve(data);
   }
 
+  hasPatches() {
+    return this._patches.length !== 0;
+  }
+
   add(
     label: string,
     path: Path | void,
-    fn: () => PromiseOrValue<mixed>,
+    fn: () => PromiseOrValue<ObjMap<mixed> | mixed>,
     errors: Array<GraphQLError>,
   ) {
     this._patches.push(
-      this.execute(fn).then((data) => ({
-        value: {
+      this.execute(fn).then((data) => {
+        const value: $Shape<ExecutionPatchResult> = {
           data,
           path: pathToArray(path),
           label,
           ...(errors && errors.length > 0 ? { errors } : {}),
-        },
-        done: false,
-      })),
+        };
+
+        return { value, done: false };
+      }),
     );
   }
 
-  get(): AsyncIterable<ExecutionPatchResult> | null {
-    if (this._patches.length === 0) {
-      return null;
-    }
+  get(
+    initialResult: PromiseOrValue<ExecutionResult>,
+  ): AsyncIterator<AsyncExecutionResult> {
+    let hasReturnedInitialResult = false;
     const results = this._patches;
 
     function race(promises) {
-      const isFinal = promises.length === 1;
+      const hasNext = promises.length !== 1;
       return new Promise((resolve) => {
         promises.forEach((promise, index) => {
           promise.then((result) => {
@@ -58,7 +100,7 @@ export class Dispatcher {
                 ...result,
                 value: {
                   ...result.value,
-                  isFinal,
+                  hasNext,
                 },
               },
               index,
@@ -69,7 +111,25 @@ export class Dispatcher {
     }
 
     const getNext = (promises) => {
-      if (promises.length === 0) {
+      if (!hasReturnedInitialResult) {
+        hasReturnedInitialResult = true;
+        if (isPromise(initialResult)) {
+          return initialResult.then((value) => ({
+            value: {
+              ...value,
+              hasNext: true,
+            },
+            done: false,
+          }));
+        }
+        return Promise.resolve({
+          value: {
+            ...initialResult,
+            hasNext: true,
+          },
+          done: false,
+        });
+      } else if (promises.length === 0) {
         return Promise.resolve({ value: undefined, done: true });
       }
       return race(promises).then(({ result, index }) => {
@@ -88,12 +148,3 @@ export class Dispatcher {
     }: any);
   }
 }
-
-export type ExecutionPatchResult = {
-  errors?: $ReadOnlyArray<GraphQLError>,
-  data?: mixed | null,
-  path: $ReadOnlyArray<string | number>,
-  label: string,
-  isFinal?: boolean,
-  ...
-};
