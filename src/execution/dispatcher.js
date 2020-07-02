@@ -14,11 +14,13 @@ import isPromise from '../jsutils/isPromise';
  *
  *   - `errors` is included when any errors occurred as a non-empty array.
  *   - `data` is the result of a successful execution of the query.
+ *   - `extensions` is reserved for adding non-standard properties.
  *   - `hasNext` is true if a future payload is expected.
  */
 export type ExecutionResult = {|
   errors?: $ReadOnlyArray<GraphQLError>,
   data?: ObjMap<mixed> | null,
+  extensions?: ObjMap<mixed>,
   hasNext?: boolean,
 |};
 
