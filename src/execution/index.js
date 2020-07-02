@@ -13,8 +13,8 @@ export type {
   ExecutionArgs,
   ExecutionResult,
   FormattedExecutionResult,
+  ExecutionPatchResult,
+  AsyncExecutionResult,
 } from './execute';
-
-export type { ExecutionPatchResult } from './dispatcher';
 
 export { getDirectiveValues } from './values';

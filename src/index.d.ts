@@ -300,6 +300,8 @@ export {
   ExecutionArgs,
   ExecutionResult,
   FormattedExecutionResult,
+  ExecutionPatchResult,
+  AsyncExecutionResult,
 } from './execution/index';
 
 export {

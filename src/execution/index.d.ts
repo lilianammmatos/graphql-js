@@ -8,6 +8,8 @@ export {
   ExecutionArgs,
   ExecutionResult,
   FormattedExecutionResult,
+  ExecutionPatchResult,
+  AsyncExecutionResult,
 } from './execute';
 
 export { getDirectiveValues } from './values';

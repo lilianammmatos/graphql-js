@@ -93,7 +93,7 @@ export class Dispatcher {
 
   get(
     initialResult: PromiseOrValue<ExecutionResult>,
-  ): AsyncIterator<AsyncExecutionResult> {
+  ): AsyncIterable<AsyncExecutionResult> {
     let hasReturnedInitialResult = false;
     const results = this._patches;
 
