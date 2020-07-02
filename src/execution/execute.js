@@ -138,7 +138,7 @@ export type ExecutionArgs = {|
 
 export type FieldsAndPatches = {
   fields: ObjMap<Array<FieldNode>>,
-  patches: Array<{| label: string, fields: ObjMap<Array<FieldNode>> |}>,
+  patches: Array<{| label?: string, fields: ObjMap<Array<FieldNode>> |}>,
   ...
 };
 
@@ -545,7 +545,7 @@ export function collectFields(
   runtimeType: GraphQLObjectType,
   selectionSet: SelectionSetNode,
   fields: ObjMap<Array<FieldNode>>,
-  patches: Array<{| label: string, fields: ObjMap<Array<FieldNode>> |}>,
+  patches: Array<{| label?: string, fields: ObjMap<Array<FieldNode>> |}>,
   visitedFragmentNames: ObjMap<boolean>,
 ): FieldsAndPatches {
   for (const selection of selectionSet.selections) {
@@ -569,12 +569,9 @@ export function collectFields(
           continue;
         }
 
-        const patchLabel =
-          exeContext.schema.__experimentalDefer === true
-            ? getDeferredNodeLabel(exeContext, selection)
-            : '';
+        const defer = getDeferValues(exeContext, selection);
 
-        if (patchLabel) {
+        if (defer) {
           const { fields: patchFields } = collectFields(
             exeContext,
             runtimeType,
@@ -584,7 +581,7 @@ export function collectFields(
             visitedFragmentNames,
           );
           patches.push({
-            label: patchLabel,
+            label: defer.label,
             fields: patchFields,
           });
         } else {
@@ -606,16 +603,13 @@ export function collectFields(
           continue;
         }
 
-        const patchLabel =
-          exeContext.schema.__experimentalDefer === true
-            ? getDeferredNodeLabel(exeContext, selection)
-            : '';
+        const defer = getDeferValues(exeContext, selection);
 
         if (
           visitedFragmentNames[fragName] &&
           // Cannot continue in this case because fields must be recollected for patch
           // TODO: Is there an optimization we can make here?
-          !patchLabel
+          !defer
         ) {
           continue;
         }
@@ -628,7 +622,7 @@ export function collectFields(
           continue;
         }
 
-        if (patchLabel) {
+        if (defer) {
           const { fields: patchFields } = collectFields(
             exeContext,
             runtimeType,
@@ -638,7 +632,7 @@ export function collectFields(
             visitedFragmentNames,
           );
           patches.push({
-            label: patchLabel,
+            label: defer.label,
             fields: patchFields,
           });
         } else {
@@ -688,24 +682,73 @@ function shouldIncludeNode(
 }
 
 /**
- * Determines if a field should be deferred based on the @defer directive
- * where @defer without an "if" condition defaults to true, and returns its unique label.
+ * Returns an object containing the @defer arguments if a field should be
+ * deferred based on the experimental flag, defer directive present and
+ * not disabled by the "if" argument.
  */
-function getDeferredNodeLabel(
+function getDeferValues(
   exeContext: ExecutionContext,
   node: FragmentSpreadNode | InlineFragmentNode,
-): string {
+): void | {| label?: string |} {
+  if (exeContext.schema.__experimentalDefer !== true) {
+    return;
+  }
   const defer = getDirectiveValues(
     GraphQLDeferDirective,
     node,
     exeContext.variableValues,
   );
+
   if (!defer) {
-    return '';
+    return;
   }
-  return defer.if !== false && typeof defer.label === 'string'
-    ? defer.label
-    : '';
+
+  if (defer.if === false) {
+    return;
+  }
+
+  return {
+    label: typeof defer.label === 'string' ? defer.label : undefined,
+  };
+}
+
+/**
+ * Returns an object containing the @stream arguments if a field should be
+ * streamed based on the experimental flag, stream directive present and
+ * not disabled by the "if" argument.
+ */
+function getStreamValues(
+  exeContext: ExecutionContext,
+  fieldNodes: $ReadOnlyArray<FieldNode>,
+): void | {|
+  initialCount?: number,
+  label?: string,
+|} {
+  if (exeContext.schema.__experimentalStream !== true) {
+    return;
+  }
+
+  // validation only allows equivalent streams on multiple fields, so it is
+  // safe to only check the first fieldNode for the stream directive
+  const stream = getDirectiveValues(
+    GraphQLStreamDirective,
+    fieldNodes[0],
+    exeContext.variableValues,
+  );
+
+  if (!stream) {
+    return;
+  }
+
+  if (stream.if === false) {
+    return;
+  }
+
+  return {
+    initialCount:
+      typeof stream.initialCount === 'number' ? stream.initialCount : undefined,
+    label: typeof stream.label === 'string' ? stream.label : undefined,
+  };
 }
 
 /**
@@ -1090,13 +1133,7 @@ function completeListValue(
     );
   }
 
-  // validation only allows equivalent streams on multiple fields, so it is
-  // safe to only check the first fieldNode for the stream directive
-  const stream = getDirectiveValues(
-    GraphQLStreamDirective,
-    fieldNodes[0],
-    exeContext.variableValues,
-  );
+  const stream = getStreamValues(exeContext, fieldNodes);
 
   // This is specified as a simple map, however we're optimizing the path
   // where the list contains no Promises by avoiding creating another Promise.
@@ -1107,10 +1144,7 @@ function completeListValue(
     // since from here on it is not ever accessed by resolver functions.
     const fieldPath = addPath(path, index, undefined);
     if (
-      exeContext.schema.__experimentalStream === true &&
       stream &&
-      stream.if !== false &&
-      typeof stream.label === 'string' &&
       typeof stream.initialCount === 'number' &&
       index >= stream.initialCount
     ) {

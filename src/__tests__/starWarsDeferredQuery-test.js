@@ -158,7 +158,7 @@ describe('Star Wars Query Deferred Tests', () => {
         query HeroNameQuery {
           hero {
             id
-            ...DroidFragment @defer(label: "DeferDroid")
+            ...DroidFragment @defer
           }
         }
         fragment DroidFragment on Droid {
@@ -202,7 +202,6 @@ describe('Star Wars Query Deferred Tests', () => {
           hasNext: true,
         },
         {
-          label: 'DeferDroid',
           path: ['hero'],
           data: {
             id: '2001',

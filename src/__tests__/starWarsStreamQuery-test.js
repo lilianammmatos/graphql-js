@@ -312,7 +312,7 @@ describe('Star Wars Query Stream Tests', () => {
       const query = `
         query HeroFriendsQuery {
           hero {
-            friends @stream(initialCount: 2, label: "HeroFriends") {
+            friends @stream(initialCount: 2) {
               id
               name
             }
@@ -349,7 +349,6 @@ describe('Star Wars Query Stream Tests', () => {
           hasNext: true,
         },
         {
-          label: 'HeroFriends',
           path: ['hero', 'friends', 2],
           data: {
             id: '1003',

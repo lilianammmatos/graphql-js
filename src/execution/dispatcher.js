@@ -35,7 +35,7 @@ export type ExecutionPatchResult = {|
   errors?: $ReadOnlyArray<GraphQLError>,
   data?: ObjMap<mixed> | mixed | null,
   path: $ReadOnlyArray<string | number>,
-  label: string,
+  label?: string,
   hasNext?: boolean,
 |};
 
@@ -66,7 +66,7 @@ export class Dispatcher {
   }
 
   add(
-    label: string,
+    label?: string,
     path: Path | void,
     fn: () => PromiseOrValue<ObjMap<mixed> | mixed>,
     errors: Array<GraphQLError>,
@@ -76,9 +76,15 @@ export class Dispatcher {
         const value: $Shape<ExecutionPatchResult> = {
           data,
           path: pathToArray(path),
-          label,
-          ...(errors && errors.length > 0 ? { errors } : {}),
         };
+
+        if (label != null) {
+          value.label = label;
+        }
+
+        if (errors && errors.length > 0) {
+          value.errors = errors;
+        }
 
         return { value, done: false };
       }),
