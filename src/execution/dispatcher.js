@@ -31,6 +31,7 @@ export type ExecutionResult = {|
  *   - `data` is the result of the additional asynchronous data.
  *   - `path` is the location of data.
  *   - `label` is the label provided to @defer or @stream.
+ *   - `extensions` is reserved for adding non-standard properties.
  *   - `hasNext` is true if a future payload is expected.
  */
 export type ExecutionPatchResult = {|
@@ -38,6 +39,7 @@ export type ExecutionPatchResult = {|
   data?: ObjMap<mixed> | mixed | null,
   path: $ReadOnlyArray<string | number>,
   label?: string,
+  extensions?: ObjMap<mixed>,
   hasNext?: boolean,
 |};
 
