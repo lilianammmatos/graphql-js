@@ -586,7 +586,12 @@ function findConflict(
         [node2],
       ];
     }
-    if (!sameStreams(node1.directives || [], node2.directives || [])) {
+
+    // istanbul ignore next (See: 'https://github.com/graphql/graphql-js/issues/2203')
+    const directives1 = node1.directives ?? [];
+    // istanbul ignore next (See: 'https://github.com/graphql/graphql-js/issues/2203')
+    const directives2 = node2.directives ?? [];
+    if (!sameStreams(directives1, directives2)) {
       return [
         [responseName, 'they have differing stream directives'],
         [node1],

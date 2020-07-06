@@ -95,9 +95,7 @@ export class Dispatcher {
     );
   }
 
-  get(
-    initialResult: PromiseOrValue<ExecutionResult>,
-  ): AsyncIterable<AsyncExecutionResult> {
+  get(initialResult: ExecutionResult): AsyncIterable<AsyncExecutionResult> {
     let hasReturnedInitialResult = false;
     const results = this._patches;
 
@@ -124,15 +122,6 @@ export class Dispatcher {
     const getNext = (promises) => {
       if (!hasReturnedInitialResult) {
         hasReturnedInitialResult = true;
-        if (isPromise(initialResult)) {
-          return initialResult.then((value) => ({
-            value: {
-              ...value,
-              hasNext: true,
-            },
-            done: false,
-          }));
-        }
         return Promise.resolve({
           value: {
             ...initialResult,

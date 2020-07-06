@@ -746,6 +746,7 @@ function getStreamValues(
 
   return {
     initialCount:
+      // istanbul ignore next (initialCount is required number argument)
       typeof stream.initialCount === 'number' ? stream.initialCount : undefined,
     label: typeof stream.label === 'string' ? stream.label : undefined,
   };
