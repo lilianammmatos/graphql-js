@@ -86,6 +86,47 @@ describe('Star Wars Query Tests', () => {
     });
   });
 
+  describe('Async Fields', () => {
+    it('Allows us to query lists that are resolved by async iterators', async () => {
+      const source = `
+        query AsyncIterableQuery {
+          human(id: "1003") {
+            friendsAsync {
+              id
+              name
+            }
+          }
+        }
+      `;
+
+      const result = await graphql({ schema, source });
+      expect(result).to.deep.equal({
+        data: {
+          human: {
+            friendsAsync: [
+              {
+                id: '1000',
+                name: 'Luke Skywalker',
+              },
+              {
+                id: '1002',
+                name: 'Han Solo',
+              },
+              {
+                id: '2000',
+                name: 'C-3PO',
+              },
+              {
+                id: '2001',
+                name: 'R2-D2',
+              },
+            ],
+          },
+        },
+      });
+    });
+  });
+
   describe('Nested Queries', () => {
     it('Allows us to query for the friends of friends of R2-D2', async () => {
       const source = `
@@ -513,6 +554,49 @@ describe('Star Wars Query Tests', () => {
             path: ['mainHero', 'story'],
           },
         ],
+      });
+    });
+
+    it('Correctly reports errors raised in an async iterator', async () => {
+      const source = `
+        query HumanFriendsQuery {
+          human(id: "1003") {
+            friendsAsync(errorIndex: 2) {
+              id
+              name
+            }
+          }
+        }
+      `;
+
+      const result = await graphql({ schema, source });
+      expect(result).to.deep.equal({
+        errors: [
+          {
+            message: 'uh oh',
+            locations: [
+              {
+                line: 4,
+                column: 13,
+              },
+            ],
+            path: ['human', 'friendsAsync', 2],
+          },
+        ],
+        data: {
+          human: {
+            friendsAsync: [
+              {
+                id: '1000',
+                name: 'Luke Skywalker',
+              },
+              {
+                id: '1002',
+                name: 'Han Solo',
+              },
+            ],
+          },
+        },
       });
     });
   });

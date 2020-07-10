@@ -358,6 +358,379 @@ describe('Star Wars Query Stream Tests', () => {
         },
       ]);
     });
+    it('Can @stream an array field that returns an async iterable', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          human(id: "1000") {
+            friendsAsync @stream(initialCount: 2, label: "HumanFriends") {
+              id
+              name
+            }
+          }
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      const patches = [];
+
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
+          patches.push(patch);
+        }
+      }
+
+      expect(patches).to.have.lengthOf(4);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            human: {
+              friendsAsync: [
+                {
+                  id: '1002',
+                  name: 'Han Solo',
+                },
+                {
+                  id: '1003',
+                  name: 'Leia Organa',
+                },
+              ],
+            },
+          },
+          hasNext: true,
+        },
+        {
+          data: {
+            id: '2000',
+            name: 'C-3PO',
+          },
+          path: ['human', 'friendsAsync', 2],
+          label: 'HumanFriends',
+          hasNext: true,
+        },
+        {
+          data: {
+            id: '2001',
+            name: 'R2-D2',
+          },
+          path: ['human', 'friendsAsync', 3],
+          label: 'HumanFriends',
+          hasNext: true,
+        },
+        {
+          hasNext: false,
+        },
+      ]);
+    });
+    it('Handles errors when thrown in initial resolve', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          human(id: "1000") {
+            friendsAsync(errorIndex: 1) @stream(initialCount: 2, label: "HumanFriends") {
+              id
+              name
+            }
+          }
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+
+      expect(result).to.deep.equal({
+        errors: [
+          {
+            message: 'uh oh',
+            locations: [
+              {
+                line: 4,
+                column: 13,
+              },
+            ],
+            path: ['human', 'friendsAsync', 1],
+          },
+        ],
+        data: {
+          human: {
+            friendsAsync: [
+              {
+                id: '1002',
+                name: 'Han Solo',
+              },
+            ],
+          },
+        },
+      });
+    });
+    it('Handles errors when thrown in streamed resolve', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          human(id: "1000") {
+            friendsAsync(errorIndex: 3) @stream(initialCount: 2, label: "HumanFriends") {
+              id
+              name
+            }
+          }
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      const patches = [];
+
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
+          patches.push(patch);
+        }
+      }
+      expect(patches).to.have.lengthOf(3);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            human: {
+              friendsAsync: [
+                {
+                  id: '1002',
+                  name: 'Han Solo',
+                },
+                {
+                  id: '1003',
+                  name: 'Leia Organa',
+                },
+              ],
+            },
+          },
+          hasNext: true,
+        },
+        {
+          data: {
+            id: '2000',
+            name: 'C-3PO',
+          },
+          path: ['human', 'friendsAsync', 2],
+          label: 'HumanFriends',
+          hasNext: true,
+        },
+        {
+          data: null,
+          path: ['human', 'friendsAsync', 3],
+          label: 'HumanFriends',
+          errors: [
+            {
+              message: 'uh oh',
+              locations: [
+                {
+                  line: 4,
+                  column: 13,
+                },
+              ],
+              path: ['human', 'friendsAsync', 3],
+            },
+          ],
+          hasNext: false,
+        },
+      ]);
+    });
+    it('Can @defer fields that are streamed from an async iterable', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          human(id: "1000") {
+            friendsAsync @stream(initialCount: 2, label: "HumanFriends") {
+              id
+              ...NameFragment @defer(label: "DeferName")
+            }
+          }
+        }
+        fragment NameFragment on Character {
+          name
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      const patches = [];
+
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
+          patches.push(patch);
+        }
+      }
+
+      expect(patches).to.have.lengthOf(8);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            human: {
+              friendsAsync: [
+                {
+                  id: '1002',
+                },
+                {
+                  id: '1003',
+                },
+              ],
+            },
+          },
+          hasNext: true,
+        },
+        {
+          data: {
+            name: 'Han Solo',
+          },
+          path: ['human', 'friendsAsync', 0],
+          label: 'DeferName',
+          hasNext: true,
+        },
+        {
+          data: {
+            name: 'Leia Organa',
+          },
+          path: ['human', 'friendsAsync', 1],
+          label: 'DeferName',
+          hasNext: true,
+        },
+        {
+          data: {
+            id: '2000',
+          },
+          path: ['human', 'friendsAsync', 2],
+          label: 'HumanFriends',
+          hasNext: true,
+        },
+        {
+          data: {
+            name: 'C-3PO',
+          },
+          path: ['human', 'friendsAsync', 2],
+          label: 'DeferName',
+          hasNext: true,
+        },
+        {
+          data: {
+            id: '2001',
+          },
+          path: ['human', 'friendsAsync', 3],
+          label: 'HumanFriends',
+          hasNext: true,
+        },
+        {
+          data: {
+            name: 'R2-D2',
+          },
+          path: ['human', 'friendsAsync', 3],
+          label: 'DeferName',
+          hasNext: true,
+        },
+        {
+          hasNext: false,
+        },
+      ]);
+    });
+    it('Can @defer fields that are streamed from an async iterable, and resolved after the iterable is complete', async () => {
+      const query = `
+        query HeroFriendsQuery {
+          human(id: "1000") {
+            friendsAsync @stream(initialCount: 2, label: "HumanFriends") {
+              id
+              ...NameFragment @defer(label: "DeferName")
+              ... on Droid @defer(label: "DeferDroidName") {
+                nameAsync
+              }
+            }
+          }
+        }
+        fragment NameFragment on Character {
+          name
+        }
+      `;
+      const result = await graphql(StarWarsSchemaDeferStreamEnabled, query);
+      const patches = [];
+
+      /* istanbul ignore else  - if result is not an asyncIterable, tests will fail as expected */
+      if (isAsyncIterable(result)) {
+        for await (const patch of result) {
+          patches.push(patch);
+        }
+      }
+
+      expect(patches).to.have.lengthOf(9);
+      expect(patches).to.deep.equal([
+        {
+          data: {
+            human: {
+              friendsAsync: [
+                {
+                  id: '1002',
+                },
+                {
+                  id: '1003',
+                },
+              ],
+            },
+          },
+          hasNext: true,
+        },
+        {
+          data: {
+            name: 'Han Solo',
+          },
+          path: ['human', 'friendsAsync', 0],
+          label: 'DeferName',
+          hasNext: true,
+        },
+        {
+          data: {
+            name: 'Leia Organa',
+          },
+          path: ['human', 'friendsAsync', 1],
+          label: 'DeferName',
+          hasNext: true,
+        },
+        {
+          data: {
+            id: '2000',
+          },
+          path: ['human', 'friendsAsync', 2],
+          label: 'HumanFriends',
+          hasNext: true,
+        },
+        {
+          data: {
+            name: 'C-3PO',
+          },
+          path: ['human', 'friendsAsync', 2],
+          label: 'DeferName',
+          hasNext: true,
+        },
+        {
+          data: {
+            id: '2001',
+          },
+          path: ['human', 'friendsAsync', 3],
+          label: 'HumanFriends',
+          hasNext: true,
+        },
+        {
+          data: {
+            name: 'R2-D2',
+          },
+          path: ['human', 'friendsAsync', 3],
+          label: 'DeferName',
+          hasNext: true,
+        },
+        {
+          data: {
+            nameAsync: 'C-3PO',
+          },
+          hasNext: true,
+          label: 'DeferDroidName',
+          path: ['human', 'friendsAsync', 2],
+        },
+        {
+          data: {
+            nameAsync: 'R2-D2',
+          },
+          hasNext: false,
+          label: 'DeferDroidName',
+          path: ['human', 'friendsAsync', 3],
+        },
+      ]);
+    });
     it('Errors are added to the correct patch', async () => {
       const query = `
         query HeroFriendsQuery {

@@ -6,7 +6,7 @@ import type { Path } from '../jsutils/Path';
 import type { ObjMap } from '../jsutils/ObjMap';
 import type { PromiseOrValue } from '../jsutils/PromiseOrValue';
 import { GraphQLError } from '../error/GraphQLError';
-import { pathToArray } from '../jsutils/Path';
+import { pathToArray, addPath } from '../jsutils/Path';
 import isPromise from '../jsutils/isPromise';
 
 /**
@@ -37,113 +37,194 @@ export type ExecutionResult = {|
 export type ExecutionPatchResult = {|
   errors?: $ReadOnlyArray<GraphQLError>,
   data?: ObjMap<mixed> | mixed | null,
+  path?: $ReadOnlyArray<string | number>,
+  label?: string,
+  extensions?: ObjMap<mixed>,
+  hasNext: boolean,
+|};
+
+/**
+ * Same as ExecutionPatchResult, but without hasNext
+ */
+type DispatcherResult = {|
+  errors?: $ReadOnlyArray<GraphQLError>,
+  data?: ObjMap<mixed> | mixed | null,
   path: $ReadOnlyArray<string | number>,
   label?: string,
   extensions?: ObjMap<mixed>,
-  hasNext?: boolean,
 |};
 
 export type AsyncExecutionResult = ExecutionResult | ExecutionPatchResult;
 
-type DispatcherIteratorResultType = {|
-  value: ExecutionPatchResult,
-  done: boolean,
-|};
-
 export class Dispatcher {
-  _patches: Array<Promise<DispatcherIteratorResultType>>;
+  _subsequentPayloads: Array<Promise<IteratorResult<DispatcherResult, void>>>;
+  _initialResult: ?ExecutionResult;
+  _hasReturnedInitialResult: boolean;
 
   constructor() {
-    this._patches = [];
+    this._subsequentPayloads = [];
+    this._hasReturnedInitialResult = false;
   }
 
-  getPromise(data: PromiseOrValue<mixed>): Promise<mixed> {
-    if (isPromise(data)) {
-      return data;
-    }
-    return Promise.resolve(data);
-  }
-
-  hasPatches() {
-    return this._patches.length !== 0;
+  hasSubsequentPayloads() {
+    return this._subsequentPayloads.length !== 0;
   }
 
   add(
     label?: string,
-    path: Path | void,
+    path?: Path,
     promiseOrData: PromiseOrValue<ObjMap<mixed> | mixed>,
     errors: Array<GraphQLError>,
-  ) {
-    this._patches.push(
-      this.getPromise(promiseOrData).then((data) => {
-        const value: $Shape<ExecutionPatchResult> = {
-          data,
-          path: pathToArray(path),
-        };
-
-        if (label != null) {
-          value.label = label;
-        }
-
-        if (errors && errors.length > 0) {
-          value.errors = errors;
-        }
-
-        return { value, done: false };
-      }),
+  ): void {
+    this._subsequentPayloads.push(
+      getPromise(promiseOrData).then((data) => ({
+        value: createPatchResult(data, label, path, errors),
+        done: false,
+      })),
     );
   }
 
-  get(initialResult: ExecutionResult): AsyncIterable<AsyncExecutionResult> {
-    let hasReturnedInitialResult = false;
-    const results = this._patches;
-
-    function race(promises) {
-      const hasNext = promises.length !== 1;
-      return new Promise((resolve) => {
-        promises.forEach((promise, index) => {
-          promise.then((result) => {
-            resolve({
-              result: {
-                ...result,
-                value: {
-                  ...result.value,
-                  hasNext,
-                },
-              },
-              index,
-            });
-          });
-        });
-      });
-    }
-
-    const getNext = (promises) => {
-      if (!hasReturnedInitialResult) {
-        hasReturnedInitialResult = true;
-        return Promise.resolve({
-          value: {
-            ...initialResult,
-            hasNext: true,
+  addAsyncIterable(
+    label?: string,
+    nextIndex: number,
+    path?: Path,
+    result: AsyncIterable<mixed>,
+    completeValue: (mixed, Path, Array<GraphQLError>) => mixed,
+    handleFieldError: (Error, Path, Array<GraphQLError>) => null,
+  ): void {
+    // $FlowFixMe
+    const iteratorMethod = result[SYMBOL_ASYNC_ITERATOR];
+    const iterator = iteratorMethod.call(result);
+    let index = nextIndex;
+    const handleNext = () => {
+      const fieldPath = addPath(path, index);
+      const patchErrors = [];
+      this._subsequentPayloads.push(
+        iterator.next().then(
+          ({ value: data, done }) => {
+            if (done && !data) {
+              return { value: undefined, done };
+            }
+            index++;
+            handleNext();
+            return {
+              value: createPatchResult(
+                completeValue(data, fieldPath, patchErrors),
+                label,
+                fieldPath,
+                patchErrors,
+              ),
+              done,
+            };
           },
-          done: false,
-        });
-      } else if (promises.length === 0) {
-        return Promise.resolve({ value: undefined, done: true });
-      }
-      return race(promises).then(({ result, index }) => {
-        promises.splice(index, 1);
-        return result;
-      });
+          (error) => {
+            handleFieldError(error, fieldPath, patchErrors);
+            return {
+              value: createPatchResult(null, label, fieldPath, patchErrors),
+              done: false,
+            };
+          },
+        ),
+      );
     };
 
+    return handleNext();
+  }
+
+  _race(): Promise<IteratorResult<ExecutionPatchResult, void>> {
+    return new Promise((resolve) => {
+      this._subsequentPayloads.forEach((promise) => {
+        promise.then(() => {
+          // resolve with actual promise, not resolved value of promise
+          // so we can remove it from this._subsequentPayloads
+          resolve({ promise });
+        });
+      });
+    })
+      .then(({ promise }) => {
+        this._subsequentPayloads.splice(
+          this._subsequentPayloads.indexOf(promise),
+          1,
+        );
+        return promise;
+      })
+      .then(({ value, done }) => {
+        if (done && this._subsequentPayloads.length === 0) {
+          // async iterable resolver just finished and no more pending payloads
+          return {
+            value: {
+              hasNext: false,
+            },
+            done: false,
+          };
+        } else if (done) {
+          // async iterable resolver just finished but there are pending payloads
+          // return the next one
+          return this._race();
+        }
+        const returnValue: ExecutionPatchResult = {
+          ...value,
+          hasNext: this._subsequentPayloads.length > 0,
+        };
+        return {
+          value: returnValue,
+          done: false,
+        };
+      });
+  }
+
+  _next(): Promise<IteratorResult<AsyncExecutionResult, void>> {
+    if (!this._hasReturnedInitialResult) {
+      this._hasReturnedInitialResult = true;
+      return Promise.resolve({
+        value: {
+          ...this._initialResult,
+          hasNext: true,
+        },
+        done: false,
+      });
+    } else if (this._subsequentPayloads.length === 0) {
+      return Promise.resolve({ value: undefined, done: true });
+    }
+    return this._race();
+  }
+
+  get(initialResult: ExecutionResult): AsyncIterable<AsyncExecutionResult> {
+    this._initialResult = initialResult;
     return ({
-      next() {
-        return getNext(results);
-      },
       [SYMBOL_ASYNC_ITERATOR]() {
         return this;
       },
+      next: () => this._next(),
     }: any);
   }
+}
+
+function createPatchResult(
+  data: ObjMap<mixed> | mixed | null,
+  label?: string,
+  path?: Path,
+  errors?: $ReadOnlyArray<GraphQLError>,
+): DispatcherResult {
+  const value: DispatcherResult = {
+    data,
+    path: path ? pathToArray(path) : [],
+  };
+
+  if (label != null) {
+    value.label = label;
+  }
+
+  if (errors && errors.length > 0) {
+    value.errors = errors;
+  }
+
+  return value;
+}
+
+function getPromise(data: PromiseOrValue<mixed>): Promise<mixed> {
+  if (isPromise(data)) {
+    return data;
+  }
+  return Promise.resolve(data);
 }

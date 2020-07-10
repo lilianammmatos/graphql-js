@@ -1,9 +1,10 @@
 // @flow strict
 
 import invariant from '../jsutils/invariant';
+import { SYMBOL_ASYNC_ITERATOR } from '../polyfills/symbols';
 
 import { GraphQLSchema } from '../type/schema';
-import { GraphQLString } from '../type/scalars';
+import { GraphQLString, GraphQLInt } from '../type/scalars';
 import {
   GraphQLList,
   GraphQLNonNull,
@@ -170,6 +171,37 @@ const humanType = new GraphQLObjectType({
         'The friends of the human, or an empty list if they have none.',
       resolve: (human) => getFriends(human),
     },
+    friendsAsync: {
+      type: GraphQLList(characterInterface),
+      description:
+        'The friends of the droid, or an empty list if they have none. Returns an AsyncIterable',
+      args: {
+        errorIndex: { type: GraphQLInt },
+      },
+      resolve: (droid, { errorIndex }) => {
+        const friends = getFriends(droid);
+        let i = 0;
+        return {
+          [SYMBOL_ASYNC_ITERATOR]() {
+            return {
+              async next() {
+                await new Promise((r) => setTimeout(r, 1));
+                const friend = friends[i];
+                if (i === errorIndex) {
+                  throw new Error('uh oh');
+                }
+                i++;
+                if (friend) {
+                  const value = await friend;
+                  return { value, done: false };
+                }
+                return { done: true };
+              },
+            };
+          },
+        };
+      },
+    },
     appearsIn: {
       type: GraphQLList(episodeEnum),
       description: 'Which movies they appear in.',
@@ -226,6 +258,14 @@ const droidType = new GraphQLObjectType({
     name: {
       type: GraphQLString,
       description: 'The name of the droid.',
+    },
+    nameAsync: {
+      type: GraphQLString,
+      description: 'The name of the droid.',
+      resolve: async (droid) => {
+        await new Promise((r) => setTimeout(r, 10));
+        return droid.name;
+      },
     },
     friends: {
       type: GraphQLList(characterInterface),

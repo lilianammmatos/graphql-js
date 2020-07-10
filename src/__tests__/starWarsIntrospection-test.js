@@ -36,6 +36,7 @@ describe('Star Wars Introspection Tests', () => {
             { name: 'Character' },
             { name: 'String' },
             { name: 'Episode' },
+            { name: 'Int' },
             { name: 'Droid' },
             { name: 'Query' },
             { name: 'Boolean' },
@@ -153,6 +154,10 @@ describe('Star Wars Introspection Tests', () => {
               type: { name: 'String', kind: 'SCALAR' },
             },
             {
+              name: 'nameAsync',
+              type: { name: 'String', kind: 'SCALAR' },
+            },
+            {
               name: 'friends',
               type: { name: null, kind: 'LIST' },
             },
@@ -210,6 +215,14 @@ describe('Star Wars Introspection Tests', () => {
             },
             {
               name: 'name',
+              type: {
+                name: 'String',
+                kind: 'SCALAR',
+                ofType: null,
+              },
+            },
+            {
+              name: 'nameAsync',
               type: {
                 name: 'String',
                 kind: 'SCALAR',

@@ -1,6 +1,7 @@
 // @flow strict
 
 import arrayFrom from '../polyfills/arrayFrom';
+import { SYMBOL_ASYNC_ITERATOR } from '../polyfills/symbols';
 
 import type { Path } from '../jsutils/Path';
 import type { ObjMap } from '../jsutils/ObjMap';
@@ -277,7 +278,7 @@ function buildResponse(
       ? { data }
       : { errors: exeContext.errors, data };
 
-  if (exeContext.dispatcher.hasPatches()) {
+  if (exeContext.dispatcher.hasSubsequentPayloads()) {
     return exeContext.dispatcher.get(initialResult);
   }
 
@@ -1114,6 +1115,93 @@ function completeValue(
   );
 }
 
+function completeAsyncIterableValue(
+  exeContext: ExecutionContext,
+  returnType: GraphQLList<GraphQLOutputType>,
+  fieldNodes: $ReadOnlyArray<FieldNode>,
+  info: GraphQLResolveInfo,
+  path: Path,
+  result: AsyncIterable<mixed>,
+  errors?: Array<GraphQLError>,
+): Promise<$ReadOnlyArray<mixed>> {
+  // $FlowFixMe
+  const iteratorMethod = result[SYMBOL_ASYNC_ITERATOR];
+  const iterator = iteratorMethod.call(result);
+
+  const completedResults = [];
+  let index = 0;
+
+  const itemType = returnType.ofType;
+
+  const stream = getStreamValues(exeContext, fieldNodes);
+
+  const handleNext = () => {
+    const fieldPath = addPath(path, index);
+    return iterator.next().then(
+      ({ value, done }) => {
+        if (done) {
+          return;
+        }
+        completedResults.push(
+          completeValue(
+            exeContext,
+            itemType,
+            fieldNodes,
+            info,
+            fieldPath,
+            value,
+            errors,
+          ),
+        );
+        index++;
+        if (
+          stream &&
+          typeof stream.initialCount === 'number' &&
+          index >= stream.initialCount
+        ) {
+          exeContext.dispatcher.addAsyncIterable(
+            stream.label,
+            index,
+            path,
+            result,
+            (patchValue, patchFieldPath, patchErrors) =>
+              completeValue(
+                exeContext,
+                itemType,
+                fieldNodes,
+                info,
+                patchFieldPath,
+                patchValue,
+                patchErrors,
+              ),
+            (error, patchFieldPath, patchErrors) =>
+              handleFieldError(
+                error,
+                fieldNodes,
+                patchFieldPath,
+                itemType,
+                exeContext,
+                patchErrors,
+              ),
+          );
+          return;
+        }
+        return handleNext();
+      },
+      (error) =>
+        handleFieldError(
+          error,
+          fieldNodes,
+          fieldPath,
+          itemType,
+          exeContext,
+          errors,
+        ),
+    );
+  };
+
+  return handleNext().then(() => completedResults);
+}
 /**
  * Complete a list value by completing each item in the list with the
  * inner type
@@ -1127,6 +1215,18 @@ function completeListValue(
   result: mixed,
   errors?: Array<GraphQLError>,
 ): PromiseOrValue<$ReadOnlyArray<mixed>> {
+  if (isAsyncIterable(result)) {
+    return completeAsyncIterableValue(
+      exeContext,
+      returnType,
+      fieldNodes,
+      info,
+      path,
+      result,
+      errors,
+    );
+  }
+
   if (!isCollection(result)) {
     throw new GraphQLError(
       `Expected Iterable, but did not find one for field "${info.parentType.name}.${info.fieldName}".`,
